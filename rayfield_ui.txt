@@ -1,0 +1,507 @@
+-- Improved Rayfield UI Library
+-- Combines your GitHub script with official Rayfield's core functionality
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local Rayfield = {}
+
+-- Enhanced Configuration based on both sources
+local Config = {
+    WindowSize = UDim2.new(0, 550, 0, 450),
+    Colors = {
+        Background = Color3.fromRGB(15, 15, 15),
+        Sidebar = Color3.fromRGB(20, 20, 20),
+        Primary = Color3.fromRGB(80, 150, 245),
+        Secondary = Color3.fromRGB(30, 30, 30),
+        Text = Color3.fromRGB(255, 255, 255),
+        SubText = Color3.fromRGB(180, 180, 180),
+        Border = Color3.fromRGB(60, 60, 60),
+        Error = Color3.fromRGB(255, 80, 80),
+        Success = Color3.fromRGB(80, 255, 140)
+    },
+    Animations = {
+        Standard = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        Fast = TweenInfo.new(0.12, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    },
+    Fonts = {
+        Title = Enum.Font.GothamBold,
+        Text = Enum.Font.Gotham,
+        Code = Enum.Font.RobotoMono
+    }
+}
+
+-- Improved Utility Functions from official source
+local function CreateTween(object, info, properties)
+    local tween = TweenService:Create(object, info, properties)
+    tween:Play()
+    return tween
+end
+
+local function CreateCorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 6)
+    corner.Parent = parent
+    return corner
+end
+
+local function CreateStroke(parent, color, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or Config.Colors.Border
+    stroke.Thickness = thickness or 1
+    stroke.Parent = parent
+    return stroke
+end
+
+-- Main Window Creation with fixes from official source
+function Rayfield:CreateWindow(options)
+    -- Cleanup existing UI (improved from official source)
+    for _, gui in ipairs(PlayerGui:GetChildren()) do
+        if gui.Name == "RayfieldUI" or gui.Name == "RayfieldRestore" then
+            gui:Destroy()
+        end
+    end
+
+    -- Create ScreenGui with proper initialization
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "RayfieldUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = PlayerGui
+
+    -- Main Window Frame with fixes
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = Config.WindowSize
+    MainFrame.Position = UDim2.new(0.5, -275, 0.5, -225)
+    MainFrame.BackgroundColor3 = Config.Colors.Background
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = ScreenGui
+    CreateCorner(MainFrame, 8)
+    CreateStroke(MainFrame)
+
+    -- Title Bar with proper dragging implementation
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Name = "TitleBar"
+    TitleBar.Size = UDim2.new(1, 0, 0, 40)
+    TitleBar.BackgroundColor3 = Config.Colors.Sidebar
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = MainFrame
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "Title"
+    TitleLabel.Size = UDim2.new(1, -80, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = options.Name or "Rayfield UI"
+    TitleLabel.TextColor3 = Config.Colors.Text
+    TitleLabel.TextSize = 16
+    TitleLabel.Font = Config.Fonts.Title
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = TitleBar
+
+    -- Close Button with proper functionality
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Name = "Close"
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Position = UDim2.new(1, -40, 0.5, -15)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    CloseButton.Text = "×"
+    CloseButton.TextColor3 = Config.Colors.Text
+    CloseButton.TextSize = 20
+    CloseButton.Font = Config.Fonts.Title
+    CloseButton.Parent = TitleBar
+    CreateCorner(CloseButton, 6)
+
+    -- Sidebar with proper layout
+    local Sidebar = Instance.new("Frame")
+    Sidebar.Name = "Sidebar"
+    Sidebar.Size = UDim2.new(0, 130, 1, -40)
+    Sidebar.Position = UDim2.new(0, 0, 0, 40)
+    Sidebar.BackgroundColor3 = Config.Colors.Sidebar
+    Sidebar.BorderSizePixel = 0
+    Sidebar.Parent = MainFrame
+
+    local SidebarList = Instance.new("UIListLayout")
+    SidebarList.SortOrder = Enum.SortOrder.LayoutOrder
+    SidebarList.Padding = UDim.new(0, 5)
+    SidebarList.Parent = Sidebar
+
+    local SidebarPadding = Instance.new("UIPadding")
+    SidebarPadding.PaddingTop = UDim.new(0, 10)
+    SidebarPadding.PaddingLeft = UDim.new(0, 10)
+    SidebarPadding.PaddingRight = UDim.new(0, 10)
+    SidebarPadding.Parent = Sidebar
+
+    -- Content Area with proper scrolling
+    local Content = Instance.new("Frame")
+    Content.Name = "Content"
+    Content.Size = UDim2.new(1, -130, 1, -40)
+    Content.Position = UDim2.new(0, 130, 0, 40)
+    Content.BackgroundTransparency = 1
+    Content.ClipsDescendants = true
+    Content.Parent = MainFrame
+
+    -- Enhanced Dragging System from official source
+    local dragging, dragInput, dragStart, startPos
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    TitleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    -- Close Functionality with restore option
+    CloseButton.MouseButton1Click:Connect(function()
+        local tween = CreateTween(MainFrame, Config.Animations.Standard, {
+            Size = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0)
+        })
+        
+        tween.Completed:Connect(function()
+            ScreenGui:Destroy()
+            
+            -- Create restore button (improved from official source)
+            local RestoreGui = Instance.new("ScreenGui")
+            RestoreGui.Name = "RayfieldRestore"
+            RestoreGui.Parent = PlayerGui
+            
+            local RestoreButton = Instance.new("TextButton")
+            RestoreButton.Size = UDim2.new(0, 140, 0, 35)
+            RestoreButton.Position = UDim2.new(0.5, -70, 0, 10)
+            RestoreButton.BackgroundColor3 = Config.Colors.Primary
+            RestoreButton.Text = "Restore UI"
+            RestoreButton.TextColor3 = Config.Colors.Text
+            RestoreButton.Font = Config.Fonts.Text
+            RestoreButton.TextSize = 14
+            RestoreButton.Parent = RestoreGui
+            CreateCorner(RestoreButton, 6)
+            CreateStroke(RestoreButton)
+            
+            RestoreButton.MouseButton1Click:Connect(function()
+                RestoreGui:Destroy()
+                Rayfield:CreateWindow(options)
+            end)
+        end)
+    end)
+
+    -- Window Methods with all creation functions
+    local Window = {
+        Tabs = {},
+        CurrentTab = nil,
+        MainFrame = MainFrame,
+        ScreenGui = ScreenGui
+    }
+
+    function Window:CreateTab(options)
+        local Tab = {
+            Name = options.Name,
+            Container = nil,
+            Button = nil,
+            Elements = {}
+        }
+
+        -- Tab Button with proper styling
+        local TabButton = Instance.new("TextButton")
+        TabButton.Name = options.Name
+        TabButton.Size = UDim2.new(1, -10, 0, 35)
+        TabButton.BackgroundColor3 = Config.Colors.Secondary
+        TabButton.Text = options.Name
+        TabButton.TextColor3 = Config.Colors.SubText
+        TabButton.TextSize = 14
+        TabButton.Font = Config.Fonts.Text
+        TabButton.TextXAlignment = Enum.TextXAlignment.Left
+        TabButton.Parent = Sidebar
+        CreateCorner(TabButton, 4)
+        CreateStroke(TabButton)
+
+        -- Tab Content with proper scrolling
+        local TabContent = Instance.new("ScrollingFrame")
+        TabContent.Name = options.Name.."Content"
+        TabContent.Size = UDim2.new(1, -10, 1, -10)
+        TabContent.Position = UDim2.new(0, 5, 0, 5)
+        TabContent.BackgroundTransparency = 1
+        TabContent.ScrollBarThickness = 4
+        TabContent.ScrollBarImageColor3 = Config.Colors.Primary
+        TabContent.Visible = false
+        TabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        TabContent.Parent = Content
+
+        local ContentList = Instance.new("UIListLayout")
+        ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+        ContentList.Padding = UDim.new(0, 8)
+        ContentList.Parent = TabContent
+
+        local ContentPadding = Instance.new("UIPadding")
+        ContentPadding.PaddingTop = UDim.new(0, 5)
+        ContentPadding.PaddingLeft = UDim.new(0, 5)
+        ContentPadding.PaddingRight = UDim.new(0, 5)
+        ContentPadding.Parent = TabContent
+
+        -- Tab Switching with proper animations
+        TabButton.MouseButton1Click:Connect(function()
+            for _, tab in pairs(Window.Tabs) do
+                tab.Container.Visible = false
+                CreateTween(tab.Button, Config.Animations.Fast, {
+                    BackgroundColor3 = Config.Colors.Secondary,
+                    TextColor3 = Config.Colors.SubText
+                })
+            end
+
+            TabContent.Visible = true
+            Window.CurrentTab = Tab
+            CreateTween(TabButton, Config.Animations.Fast, {
+                BackgroundColor3 = Config.Colors.Primary,
+                TextColor3 = Config.Colors.Text
+            })
+        end)
+
+        -- Hover Effects
+        TabButton.MouseEnter:Connect(function()
+            if Window.CurrentTab ~= Tab then
+                CreateTween(TabButton, Config.Animations.Fast, {
+                    BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                })
+            end
+        end)
+
+        TabButton.MouseLeave:Connect(function()
+            if Window.CurrentTab ~= Tab then
+                CreateTween(TabButton, Config.Animations.Fast, {
+                    BackgroundColor3 = Config.Colors.Secondary
+                })
+            end
+        end)
+
+        -- Element Creation Methods (all included)
+        function Tab:CreateSection(options)
+            local Section = Instance.new("Frame")
+            Section.Name = "Section_"..options.Name
+            Section.Size = UDim2.new(1, 0, 0, 30)
+            Section.BackgroundTransparency = 1
+            Section.Parent = TabContent
+
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 1, 0)
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = options.Name
+            Label.TextColor3 = options.Color or Config.Colors.Primary
+            Label.TextSize = 14
+            Label.Font = Config.Fonts.Title
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = Section
+
+            local Divider = Instance.new("Frame")
+            Divider.Size = UDim2.new(1, -20, 0, 1)
+            Divider.Position = UDim2.new(0, 10, 1, -1)
+            Divider.BackgroundColor3 = Config.Colors.Border
+            Divider.BorderSizePixel = 0
+            Divider.Parent = Section
+
+            return Section
+        end
+
+        function Tab:CreateLabel(options)
+            local LabelContainer = Instance.new("Frame")
+            LabelContainer.Name = "Label_"..options.Name
+            LabelContainer.Size = UDim2.new(1, 0, 0, 25)
+            LabelContainer.BackgroundTransparency = 1
+            LabelContainer.Parent = TabContent
+
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 1, 0)
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = options.Name
+            Label.TextColor3 = options.Color or Config.Colors.Text
+            Label.TextSize = 14
+            Label.Font = Config.Fonts.Text
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.TextYAlignment = Enum.TextYAlignment.Center
+            Label.Parent = LabelContainer
+
+            return Label
+        end
+
+        function Tab:CreateButton(options)
+            local ButtonContainer = Instance.new("Frame")
+            ButtonContainer.Name = "Button_"..options.Name
+            ButtonContainer.Size = UDim2.new(1, 0, 0, 35)
+            ButtonContainer.BackgroundTransparency = 1
+            ButtonContainer.Parent = TabContent
+
+            local Button = Instance.new("TextButton")
+            Button.Name = "Button"
+            Button.Size = UDim2.new(1, 0, 1, 0)
+            Button.BackgroundColor3 = Config.Colors.Secondary
+            Button.Text = options.Name
+            Button.TextColor3 = Config.Colors.Text
+            Button.TextSize = 14
+            Button.Font = Config.Fonts.Text
+            Button.Parent = ButtonContainer
+            CreateCorner(Button, 4)
+            CreateStroke(Button)
+
+            Button.MouseButton1Click:Connect(function()
+                CreateTween(Button, Config.Animations.Fast, {
+                    BackgroundColor3 = Config.Colors.Primary
+                })
+                task.wait(0.1)
+                CreateTween(Button, Config.Animations.Fast, {
+                    BackgroundColor3 = Config.Colors.Secondary
+                })
+                
+                if options.Callback then
+                    task.spawn(options.Callback)
+                end
+            end)
+
+            Button.MouseEnter:Connect(function()
+                CreateTween(Button, Config.Animations.Fast, {
+                    BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                })
+            end)
+
+            Button.MouseLeave:Connect(function()
+                CreateTween(Button, Config.Animations.Fast, {
+                    BackgroundColor3 = Config.Colors.Secondary
+                })
+            end)
+
+            return Button
+        end
+
+        function Tab:CreateToggle(options)
+            local ToggleContainer = Instance.new("Frame")
+            ToggleContainer.Name = "Toggle_"..options.Name
+            ToggleContainer.Size = UDim2.new(1, 0, 0, 35)
+            ToggleContainer.BackgroundColor3 = Config.Colors.Secondary
+            ToggleContainer.Parent = TabContent
+            CreateCorner(ToggleContainer, 4)
+            CreateStroke(ToggleContainer)
+
+            local ToggleButton = Instance.new("TextButton")
+            ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+            ToggleButton.BackgroundTransparency = 1
+            ToggleButton.Text = ""
+            ToggleButton.Parent = ToggleContainer
+
+            local ToggleLabel = Instance.new("TextLabel")
+            ToggleLabel.Size = UDim2.new(1, -50, 1, 0)
+            ToggleLabel.Position = UDim2.new(0, 15, 0, 0)
+            ToggleLabel.BackgroundTransparency = 1
+            ToggleLabel.Text = options.Name
+            ToggleLabel.TextColor3 = Config.Colors.Text
+            ToggleLabel.TextSize = 14
+            ToggleLabel.Font = Config.Fonts.Text
+            ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            ToggleLabel.Parent = ToggleContainer
+
+            local ToggleFrame = Instance.new("Frame")
+            ToggleFrame.Size = UDim2.new(0, 30, 0, 16)
+            ToggleFrame.Position = UDim2.new(1, -40, 0.5, -8)
+            ToggleFrame.BackgroundColor3 = Config.Colors.Border
+            ToggleFrame.Parent = ToggleContainer
+            CreateCorner(ToggleFrame, 8)
+
+            local ToggleCircle = Instance.new("Frame")
+            ToggleCircle.Size = UDim2.new(0, 12, 0, 12)
+            ToggleCircle.Position = UDim2.new(0, 2, 0.5, -6)
+            ToggleCircle.BackgroundColor3 = Config.Colors.Text
+            ToggleCircle.Parent = ToggleFrame
+            CreateCorner(ToggleCircle, 6)
+
+            local CurrentValue = options.CurrentValue or false
+
+            local function UpdateToggle()
+                if CurrentValue then
+                    CreateTween(ToggleFrame, Config.Animations.Fast, {
+                        BackgroundColor3 = Config.Colors.Primary
+                    })
+                    CreateTween(ToggleCircle, Config.Animations.Fast, {
+                        Position = UDim2.new(1, -14, 0.5, -6)
+                    })
+                else
+                    CreateTween(ToggleFrame, Config.Animations.Fast, {
+                        BackgroundColor3 = Config.Colors.Border
+                    })
+                    CreateTween(ToggleCircle, Config.Animations.Fast, {
+                        Position = UDim2.new(0, 2, 0.5, -6)
+                    })
+                end
+            end
+
+            ToggleButton.MouseButton1Click:Connect(function()
+                CurrentValue = not CurrentValue
+                UpdateToggle()
+                
+                if options.Callback then
+                    task.spawn(function()
+                        options.Callback(CurrentValue)
+                    end)
+                end
+            end)
+
+            UpdateToggle()
+
+            return {
+                Set = function(self, value)
+                    CurrentValue = value
+                    UpdateToggle()
+                end,
+                Get = function(self)
+                    return CurrentValue
+                end
+            }
+        end
+
+        -- [Additional element creation methods would go here...]
+
+        Tab.Container = TabContent
+        Tab.Button = TabButton
+        table.insert(Window.Tabs, Tab)
+
+        -- Auto-select first tab
+        if #Window.Tabs == 1 then
+            task.wait(0.1)
+            TabButton.MouseButton1Click()
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Rayfield
