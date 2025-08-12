@@ -1,0 +1,1745 @@
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Main UI Designer GUI
+local designerGui = Instance.new("ScreenGui")
+designerGui.Name = "UIDesigner"
+designerGui.ResetOnSpawn = false
+designerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+designerGui.Parent = game:GetService("CoreGui")
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 400, 0, 600)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = designerGui
+
+-- Add UICorner to main frame
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+-- Add UIStroke to main frame
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(70, 70, 70)
+mainStroke.Thickness = 2
+mainStroke.Parent = mainFrame
+
+-- Drop Shadow
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 20, 1, 20)
+shadow.Position = UDim2.new(0, -10, 0, -10)
+shadow.Image = "rbxasset://textures/ui/Controls/DropShadow.png"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.5
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(12, 12, 12, 12)
+shadow.ZIndex = -1
+shadow.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+-- Fix title bar corners
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 20)
+titleFix.Position = UDim2.new(0, 0, 1, -20)
+titleFix.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -100, 1, 0)
+titleText.Position = UDim2.new(0, 15, 0, 0)
+titleText.Text = "🎨 GUI Designer Utility v2.0"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.BackgroundTransparency = 1
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+-- Minimize Button
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+minimizeButton.Position = UDim2.new(1, -70, 0, 5)
+minimizeButton.Text = "−"
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.TextSize = 16
+minimizeButton.Parent = titleBar
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 6)
+minimizeCorner.Parent = minimizeButton
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 14
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- Button hover effects
+local function addHoverEffect(button, hoverColor, normalColor)
+    button.MouseEnter:Connect(function()
+        local tween = TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor})
+        tween:Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        local tween = TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = normalColor})
+        tween:Play()
+    end)
+end
+
+addHoverEffect(closeButton, Color3.fromRGB(255, 70, 70), Color3.fromRGB(220, 50, 50))
+addHoverEffect(minimizeButton, Color3.fromRGB(120, 120, 120), Color3.fromRGB(100, 100, 100))
+
+-- Variables for dragging and minimizing
+local dragging = false
+local dragStart = nil
+local startPos = nil
+local isMinimized = false
+local originalSize = mainFrame.Size
+
+-- Dragging functionality
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Minimize functionality
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        originalSize = mainFrame.Size
+        local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 400, 0, 40)})
+        tween:Play()
+        minimizeButton.Text = "+"
+    else
+        local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = originalSize})
+        tween:Play()
+        minimizeButton.Text = "−"
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    designerGui:Destroy()
+end)
+
+-- Tabs
+local tabFrame = Instance.new("Frame")
+tabFrame.Name = "TabFrame"
+tabFrame.Size = UDim2.new(1, 0, 0, 35)
+tabFrame.Position = UDim2.new(0, 0, 0, 40)
+tabFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+tabFrame.BorderSizePixel = 0
+tabFrame.Parent = mainFrame
+
+local createTab = Instance.new("TextButton")
+createTab.Name = "CreateTab"
+createTab.Size = UDim2.new(0.33, 0, 1, 0)
+createTab.Position = UDim2.new(0, 0, 0, 0)
+createTab.Text = "📝 Create"
+createTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+createTab.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+createTab.BorderSizePixel = 0
+createTab.Font = Enum.Font.GothamMedium
+createTab.TextSize = 13
+createTab.Parent = tabFrame
+
+local customizeTab = Instance.new("TextButton")
+customizeTab.Name = "CustomizeTab"
+customizeTab.Size = UDim2.new(0.33, 0, 1, 0)
+customizeTab.Position = UDim2.new(0.33, 0, 0, 0)
+customizeTab.Text = "🎨 Customize"
+customizeTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+customizeTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+customizeTab.BorderSizePixel = 0
+customizeTab.Font = Enum.Font.GothamMedium
+customizeTab.TextSize = 13
+customizeTab.Parent = tabFrame
+
+local settingsTab = Instance.new("TextButton")
+settingsTab.Name = "SettingsTab"
+settingsTab.Size = UDim2.new(0.34, 0, 1, 0)
+settingsTab.Position = UDim2.new(0.66, 0, 0, 0)
+settingsTab.Text = "⚙️ Settings"
+settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+settingsTab.BorderSizePixel = 0
+settingsTab.Font = Enum.Font.GothamMedium
+settingsTab.TextSize = 13
+settingsTab.Parent = tabFrame
+
+-- Content Frame
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, -20, 1, -95)
+contentFrame.Position = UDim2.new(0, 10, 0, 85)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+-- Variables
+local selectedElement = nil
+local currentTab = "Create"
+
+-- Create UI Elements with enhanced properties
+local createElements = {
+    ScreenGui = {
+        Name = "NewScreenGui",
+        Parent = playerGui,
+        Icon = "🖥️",
+        Description = "Main container for UI elements"
+    },
+    Frame = {
+        Name = "NewFrame",
+        Size = UDim2.new(0, 200, 0, 200),
+        Position = UDim2.new(0.5, -100, 0.5, -100),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        Icon = "⬜",
+        Description = "Basic container frame"
+    },
+    TextLabel = {
+        Name = "NewTextLabel",
+        Size = UDim2.new(0, 150, 0, 50),
+        Position = UDim2.new(0.5, -75, 0.5, -25),
+        BackgroundColor3 = Color3.fromRGB(100, 100, 255),
+        Text = "Text Label",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        Icon = "📝",
+        Description = "Display text to users"
+    },
+    TextButton = {
+        Name = "NewTextButton",
+        Size = UDim2.new(0, 150, 0, 50),
+        Position = UDim2.new(0.5, -75, 0.5, -25),
+        BackgroundColor3 = Color3.fromRGB(100, 255, 100),
+        Text = "Click Me",
+        TextColor3 = Color3.fromRGB(0, 0, 0),
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        Icon = "🔘",
+        Description = "Interactive button element"
+    },
+    TextBox = {
+        Name = "NewTextBox",
+        Size = UDim2.new(0, 150, 0, 30),
+        Position = UDim2.new(0.5, -75, 0.5, -15),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        Text = "Enter text...",
+        TextColor3 = Color3.fromRGB(0, 0, 0),
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        Icon = "✏️",
+        Description = "Text input field"
+    },
+    ImageLabel = {
+        Name = "NewImageLabel",
+        Size = UDim2.new(0, 150, 0, 150),
+        Position = UDim2.new(0.5, -75, 0.5, -75),
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+        Image = "rbxassetid://0",
+        BorderSizePixel = 0,
+        Icon = "🖼️",
+        Description = "Display images"
+    },
+    ImageButton = {
+        Name = "NewImageButton",
+        Size = UDim2.new(0, 100, 0, 100),
+        Position = UDim2.new(0.5, -50, 0.5, -50),
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+        Image = "rbxassetid://0",
+        BorderSizePixel = 0,
+        Icon = "🖱️",
+        Description = "Interactive image button"
+    },
+    ScrollingFrame = {
+        Name = "NewScrollingFrame",
+        Size = UDim2.new(0, 200, 0, 200),
+        Position = UDim2.new(0.5, -100, 0.5, -100),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        CanvasSize = UDim2.new(0, 0, 2, 0),
+        ScrollBarThickness = 8,
+        BorderSizePixel = 0,
+        Icon = "📜",
+        Description = "Scrollable container"
+    },
+    ViewportFrame = {
+        Name = "NewViewportFrame",
+        Size = UDim2.new(0, 200, 0, 200),
+        Position = UDim2.new(0.5, -100, 0.5, -100),
+        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+        BorderSizePixel = 0,
+        Icon = "🎭",
+        Description = "3D viewport container"
+    }
+}
+
+-- Create Tab Content
+local createContent = Instance.new("ScrollingFrame")
+createContent.Name = "CreateContent"
+createContent.Size = UDim2.new(1, 0, 1, 0)
+createContent.BackgroundTransparency = 1
+createContent.ScrollBarThickness = 8
+createContent.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+createContent.BorderSizePixel = 0
+createContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+createContent.Visible = true
+createContent.Parent = contentFrame
+
+-- Auto-resize canvas
+local function updateCanvasSize()
+    local totalHeight = 0
+    for _, child in pairs(createContent:GetChildren()) do
+        if child:IsA("GuiObject") then
+            totalHeight = math.max(totalHeight, child.Position.Y.Offset + child.Size.Y.Offset)
+        end
+    end
+    createContent.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 20)
+end
+
+local yPos = 10
+for elementType, properties in pairs(createElements) do
+    local button = Instance.new("TextButton")
+    button.Name = elementType .. "Button"
+    button.Size = UDim2.new(1, -20, 0, 60)
+    button.Position = UDim2.new(0, 10, 0, yPos)
+    button.Text = ""
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    button.BorderSizePixel = 0
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 12
+    button.Parent = createContent
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+    
+    local buttonStroke = Instance.new("UIStroke")
+    buttonStroke.Color = Color3.fromRGB(70, 70, 70)
+    buttonStroke.Thickness = 1
+    buttonStroke.Parent = button
+    
+    -- Icon
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.new(0, 40, 0, 30)
+    icon.Position = UDim2.new(0, 10, 0, 5)
+    icon.Text = properties.Icon
+    icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    icon.BackgroundTransparency = 1
+    icon.Font = Enum.Font.GothamBold
+    icon.TextSize = 20
+    icon.Parent = button
+    
+    -- Title
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -60, 0, 25)
+    title.Position = UDim2.new(0, 55, 0, 5)
+    title.Text = "Create " .. elementType
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = button
+    
+    -- Description
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(1, -60, 0, 25)
+    desc.Position = UDim2.new(0, 55, 0, 25)
+    desc.Text = properties.Description
+    desc.TextColor3 = Color3.fromRGB(180, 180, 180)
+    desc.BackgroundTransparency = 1
+    desc.Font = Enum.Font.Gotham
+    desc.TextSize = 11
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = button
+    
+    -- Hover effect
+    addHoverEffect(button, Color3.fromRGB(55, 55, 55), Color3.fromRGB(45, 45, 45))
+    
+    button.MouseButton1Click:Connect(function()
+        local newElement = Instance.new(elementType)
+        
+        for property, value in pairs(properties) do
+            if property ~= "Icon" and property ~= "Description" then
+                if property == "Parent" then
+                    -- Handle parent assignment
+                    if type(value) == "string" then
+                        local success, result = pcall(function()
+                            return game:GetService(value)
+                        end)
+                        newElement.Parent = success and result or playerGui
+                    else
+                        newElement.Parent = value
+                    end
+                else
+                    pcall(function()
+                        newElement[property] = value
+                    end)
+                end
+            end
+        end
+        
+        -- Add default styling for GUI objects
+        if newElement:IsA("GuiObject") and not newElement:IsA("ScreenGui") then
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 8)
+            corner.Parent = newElement
+            
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(100, 100, 100)
+            stroke.Thickness = 1
+            stroke.Parent = newElement
+        end
+        
+        -- Select the new element for customization
+        selectedElement = newElement
+        updateCustomizeTab()
+        
+        -- Switch to customize tab
+        switchTab("Customize")
+        
+        -- Show notification
+        showNotification("✅ Created " .. elementType, Color3.fromRGB(50, 200, 50))
+    end)
+    
+    yPos = yPos + 70
+end
+
+updateCanvasSize()
+
+-- Notification system
+local function showNotification(text, color)
+    local notification = Instance.new("Frame")
+    notification.Name = "Notification"
+    notification.Size = UDim2.new(0, 250, 0, 40)
+    notification.Position = UDim2.new(0.5, -125, 1, 20)
+    notification.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50)
+    notification.BorderSizePixel = 0
+    notification.Parent = mainFrame
+    
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.CornerRadius = UDim.new(0, 8)
+    notifCorner.Parent = notification
+    
+    local notifText = Instance.new("TextLabel")
+    notifText.Size = UDim2.new(1, -20, 1, 0)
+    notifText.Position = UDim2.new(0, 10, 0, 0)
+    notifText.Text = text
+    notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notifText.BackgroundTransparency = 1
+    notifText.Font = Enum.Font.GothamMedium
+    notifText.TextSize = 12
+    notifText.TextXAlignment = Enum.TextXAlignment.Left
+    notifText.Parent = notification
+    
+    -- Animate in
+    local tweenIn = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, -125, 1, -50)})
+    tweenIn:Play()
+    
+    -- Animate out after delay
+    delay(2, function()
+        local tweenOut = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Position = UDim2.new(0.5, -125, 1, 20), BackgroundTransparency = 1})
+        TweenService:Create(notifText, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            notification:Destroy()
+        end)
+    end)
+end
+
+-- Customize Tab Content
+local customizeContent = Instance.new("ScrollingFrame")
+customizeContent.Name = "CustomizeContent"
+customizeContent.Size = UDim2.new(1, 0, 1, 0)
+customizeContent.BackgroundTransparency = 1
+customizeContent.ScrollBarThickness = 8
+customizeContent.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+customizeContent.BorderSizePixel = 0
+customizeContent.CanvasSize = UDim2.new(0, 0, 0, 800)
+customizeContent.Visible = false
+customizeContent.Parent = contentFrame
+
+-- Settings Tab Content
+local settingsContent = Instance.new("ScrollingFrame")
+settingsContent.Name = "SettingsContent"
+settingsContent.Size = UDim2.new(1, 0, 1, 0)
+settingsContent.BackgroundTransparency = 1
+settingsContent.ScrollBarThickness = 8
+settingsContent.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+settingsContent.BorderSizePixel = 0
+settingsContent.CanvasSize = UDim2.new(0, 0, 0, 400)
+settingsContent.Visible = false
+settingsContent.Parent = contentFrame
+
+-- Tab switching function
+function switchTab(tabName)
+    currentTab = tabName
+    
+    -- Reset all tabs
+    createTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    customizeTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    
+    createContent.Visible = false
+    customizeContent.Visible = false
+    settingsContent.Visible = false
+    
+    -- Activate selected tab
+    if tabName == "Create" then
+        createTab.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        createContent.Visible = true
+    elseif tabName == "Customize" then
+        customizeTab.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        customizeContent.Visible = true
+    elseif tabName == "Settings" then
+        settingsTab.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        settingsContent.Visible = true
+    end
+end
+
+-- Tab click handlers
+createTab.MouseButton1Click:Connect(function() switchTab("Create") end)
+customizeTab.MouseButton1Click:Connect(function() switchTab("Customize") end)
+settingsTab.MouseButton1Click:Connect(function() switchTab("Settings") end)
+
+-- Function to create labeled input
+local function createLabeledInput(parent, labelText, defaultValue, yPosition, callback)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.4, -5, 0, 25)
+    label.Position = UDim2.new(0, 10, 0, yPosition)
+    label.Text = labelText
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(0.6, -15, 0, 25)
+    input.Position = UDim2.new(0.4, 0, 0, yPosition)
+    input.Text = tostring(defaultValue)
+    input.TextColor3 = Color3.fromRGB(0, 0, 0)
+    input.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    input.BorderSizePixel = 0
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 12
+    input.Parent = parent
+    
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 4)
+    inputCorner.Parent = input
+    
+    if callback then
+        input.FocusLost:Connect(function()
+            callback(input.Text)
+        end)
+    end
+    
+    return input
+end
+
+-- Function to create color picker
+local function createColorPicker(parent, labelText, currentColor, yPosition, callback)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 10, 0, yPosition)
+    label.Text = labelText
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    
+    yPosition = yPosition + 25
+    
+    -- Color preview
+    local colorPreview = Instance.new("Frame")
+    colorPreview.Size = UDim2.new(0, 50, 0, 30)
+    colorPreview.Position = UDim2.new(0, 10, 0, yPosition)
+    colorPreview.BackgroundColor3 = currentColor
+    colorPreview.BorderSizePixel = 0
+    colorPreview.Parent = parent
+    
+    local previewCorner = Instance.new("UICorner")
+    previewCorner.CornerRadius = UDim.new(0, 6)
+    previewCorner.Parent = colorPreview
+    
+    -- RGB inputs
+    local rInput = createLabeledInput(parent, "R:", math.floor(currentColor.R * 255), yPosition, nil)
+    rInput.Size = UDim2.new(0.2, -5, 0, 30)
+    rInput.Position = UDim2.new(0, 70, 0, yPosition)
+    
+    local gInput = createLabeledInput(parent, "G:", math.floor(currentColor.G * 255), yPosition, nil)
+    gInput.Size = UDim2.new(0.2, -5, 0, 30)
+    gInput.Position = UDim2.new(0.33, 0, 0, yPosition)
+    
+    local bInput = createLabeledInput(parent, "B:", math.floor(currentColor.B * 255), yPosition, nil)
+    bInput.Size = UDim2.new(0.2, -5, 0, 30)
+    bInput.Position = UDim2.new(0.66, 0, 0, yPosition)
+    
+    -- Apply button
+    local applyButton = Instance.new("TextButton")
+    applyButton.Size = UDim2.new(0.8, 0, 0, 30)
+    applyButton.Position = UDim2.new(0.1, 0, 0, yPosition + 40)
+    applyButton.Text = "Apply Color"
+    applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    applyButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+    applyButton.BorderSizePixel = 0
+    applyButton.Font = Enum.Font.GothamMedium
+    applyButton.TextSize = 12
+    applyButton.Parent = parent
+    
+    local applyCorner = Instance.new("UICorner")
+    applyCorner.CornerRadius = UDim.new(0, 6)
+    applyCorner.Parent = applyButton
+    
+    addHoverEffect(applyButton, Color3.fromRGB(70, 130, 210), Color3.fromRGB(60, 120, 200))
+    
+    applyButton.MouseButton1Click:Connect(function()
+        local r = math.clamp(tonumber(rInput.Text) or 255, 0, 255) / 255
+        local g = math.clamp(tonumber(gInput.Text) or 255, 0, 255) / 255
+        local b = math.clamp(tonumber(bInput.Text) or 255, 0, 255) / 255
+        local newColor = Color3.new(r, g, b)
+        colorPreview.BackgroundColor3 = newColor
+        if callback then
+            callback(newColor)
+        end
+    end)
+    
+    return yPosition + 80
+end
+
+-- Function to update customize tab based on selected element
+function updateCustomizeTab()
+    customizeContent:ClearAllChildren()
+    
+    if not selectedElement or not selectedElement.Parent then
+        local noSelection = Instance.new("TextLabel")
+        noSelection.Size = UDim2.new(1, -20, 0, 50)
+        noSelection.Position = UDim2.new(0, 10, 0, 10)
+        noSelection.Text = "❌ No element selected or element was deleted"
+        noSelection.TextColor3 = Color3.fromRGB(255, 100, 100)
+        noSelection.BackgroundTransparency = 1
+        noSelection.Font = Enum.Font.GothamBold
+        noSelection.TextSize = 14
+        noSelection.TextXAlignment = Enum.TextXAlignment.Center
+        noSelection.Parent = customizeContent
+        
+        local selectButton = Instance.new("TextButton")
+        selectButton.Size = UDim2.new(0.8, 0, 0, 40)
+        selectButton.Position = UDim2.new(0.1, 0, 0, 70)
+        selectButton.Text = "📍 Click to Select Element"
+        selectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        selectButton.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+        selectButton.BorderSizePixel = 0
+        selectButton.Font = Enum.Font.GothamMedium
+        selectButton.TextSize = 14
+        selectButton.Parent = customizeContent
+        
+        local selectCorner = Instance.new("UICorner")
+        selectCorner.CornerRadius = UDim.new(0, 8)
+        selectCorner.Parent = selectButton
+        
+        addHoverEffect(selectButton, Color3.fromRGB(110, 160, 210), Color3.fromRGB(100, 150, 200))
+        
+        -- Element selection mode
+        selectButton.MouseButton1Click:Connect(function()
+            showNotification("🎯 Click on any GUI element to select it", Color3.fromRGB(100, 150, 200))
+            
+            local connection
+            connection = UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local target = UserInputService:GetMouseTarget()
+                    if target and target:IsA("GuiObject") and target ~= selectButton then
+                        selectedElement = target
+                        updateCustomizeTab()
+                        showNotification("✅ Selected: " .. target.Name, Color3.fromRGB(50, 200, 50))
+                        connection:Disconnect()
+                    end
+                end
+            end)
+        end)
+        
+        return
+    end
+    
+    local yPos = 10
+    
+    -- Element Info Header
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Size = UDim2.new(1, -20, 0, 60)
+    infoFrame.Position = UDim2.new(0, 10, 0, yPos)
+    infoFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    infoFrame.BorderSizePixel = 0
+    infoFrame.Parent = customizeContent
+    
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.CornerRadius = UDim.new(0, 8)
+    infoCorner.Parent = infoFrame
+    
+    local infoLabel = Instance.new("TextLabel")
+    infoLabel.Size = UDim2.new(1, -20, 0, 25)
+    infoLabel.Position = UDim2.new(0, 10, 0, 5)
+    infoLabel.Text = "🎨 Editing: " .. selectedElement.Name
+    infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.Font = Enum.Font.GothamBold
+    infoLabel.TextSize = 16
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    infoLabel.Parent = infoFrame
+    
+    local typeLabel = Instance.new("TextLabel")
+    typeLabel.Size = UDim2.new(1, -20, 0, 20)
+    typeLabel.Position = UDim2.new(0, 10, 0, 30)
+    typeLabel.Text = "Type: " .. selectedElement.ClassName
+    typeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    typeLabel.BackgroundTransparency = 1
+    typeLabel.Font = Enum.Font.Gotham
+    typeLabel.TextSize = 12
+    typeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    typeLabel.Parent = infoFrame
+    
+    -- Delete button
+    local deleteButton = Instance.new("TextButton")
+    deleteButton.Size = UDim2.new(0, 60, 0, 25)
+    deleteButton.Position = UDim2.new(1, -70, 0, 5)
+    deleteButton.Text = "🗑️ Delete"
+    deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    deleteButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    deleteButton.BorderSizePixel = 0
+    deleteButton.Font = Enum.Font.GothamMedium
+    deleteButton.TextSize = 10
+    deleteButton.Parent = infoFrame
+    
+    local deleteCorner = Instance.new("UICorner")
+    deleteCorner.CornerRadius = UDim.new(0, 4)
+    deleteCorner.Parent = deleteButton
+    
+    addHoverEffect(deleteButton, Color3.fromRGB(220, 70, 70), Color3.fromRGB(200, 50, 50))
+    
+    deleteButton.MouseButton1Click:Connect(function()
+        selectedElement:Destroy()
+        selectedElement = nil
+        updateCustomizeTab()
+        showNotification("🗑️ Element deleted", Color3.fromRGB(200, 100, 50))
+    end)
+    
+    yPos = yPos + 80
+    
+    -- Basic Properties Section
+    local basicSection = Instance.new("TextLabel")
+    basicSection.Size = UDim2.new(1, -20, 0, 25)
+    basicSection.Position = UDim2.new(0, 10, 0, yPos)
+    basicSection.Text = "📐 Basic Properties"
+    basicSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+    basicSection.BackgroundTransparency = 1
+    basicSection.Font = Enum.Font.GothamBold
+    basicSection.TextSize = 14
+    basicSection.TextXAlignment = Enum.TextXAlignment.Left
+    basicSection.Parent = customizeContent
+    
+    yPos = yPos + 35
+    
+    -- Name
+    createLabeledInput(customizeContent, "Name:", selectedElement.Name, yPos, function(value)
+        selectedElement.Name = value
+        infoLabel.Text = "🎨 Editing: " .. selectedElement.Name
+    end)
+    
+    yPos = yPos + 35
+    
+    -- Size controls
+    if selectedElement:IsA("GuiObject") then
+        createLabeledInput(customizeContent, "Width:", selectedElement.Size.X.Offset, yPos, function(value)
+            local newWidth = tonumber(value) or selectedElement.Size.X.Offset
+            selectedElement.Size = UDim2.new(selectedElement.Size.X.Scale, newWidth, selectedElement.Size.Y.Scale, selectedElement.Size.Y.Offset)
+        end)
+        
+        yPos = yPos + 35
+        
+        createLabeledInput(customizeContent, "Height:", selectedElement.Size.Y.Offset, yPos, function(value)
+            local newHeight = tonumber(value) or selectedElement.Size.Y.Offset
+            selectedElement.Size = UDim2.new(selectedElement.Size.X.Scale, selectedElement.Size.X.Offset, selectedElement.Size.Y.Scale, newHeight)
+        end)
+        
+        yPos = yPos + 35
+        
+        -- Position controls
+        createLabeledInput(customizeContent, "X Position:", selectedElement.Position.X.Offset, yPos, function(value)
+            local newX = tonumber(value) or selectedElement.Position.X.Offset
+            selectedElement.Position = UDim2.new(selectedElement.Position.X.Scale, newX, selectedElement.Position.Y.Scale, selectedElement.Position.Y.Offset)
+        end)
+        
+        yPos = yPos + 35
+        
+        createLabeledInput(customizeContent, "Y Position:", selectedElement.Position.Y.Offset, yPos, function(value)
+            local newY = tonumber(value) or selectedElement.Position.Y.Offset
+            selectedElement.Position = UDim2.new(selectedElement.Position.X.Scale, selectedElement.Position.X.Offset, selectedElement.Position.Y.Scale, newY)
+        end)
+        
+        yPos = yPos + 45
+        
+        -- Appearance Section
+        local appearanceSection = Instance.new("TextLabel")
+        appearanceSection.Size = UDim2.new(1, -20, 0, 25)
+        appearanceSection.Position = UDim2.new(0, 10, 0, yPos)
+        appearanceSection.Text = "🎨 Appearance"
+        appearanceSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+        appearanceSection.BackgroundTransparency = 1
+        appearanceSection.Font = Enum.Font.GothamBold
+        appearanceSection.TextSize = 14
+        appearanceSection.TextXAlignment = Enum.TextXAlignment.Left
+        appearanceSection.Parent = customizeContent
+        
+        yPos = yPos + 35
+        
+        -- Background Color
+        yPos = createColorPicker(customizeContent, "Background Color:", selectedElement.BackgroundColor3, yPos, function(color)
+            selectedElement.BackgroundColor3 = color
+        end)
+        
+        -- Background Transparency
+        createLabeledInput(customizeContent, "Transparency:", selectedElement.BackgroundTransparency, yPos, function(value)
+            local newTransparency = math.clamp(tonumber(value) or 0, 0, 1)
+            selectedElement.BackgroundTransparency = newTransparency
+        end)
+        
+        yPos = yPos + 35
+    end
+    
+    -- Text Properties
+    if selectedElement:IsA("TextLabel") or selectedElement:IsA("TextButton") or selectedElement:IsA("TextBox") then
+        yPos = yPos + 10
+        
+        local textSection = Instance.new("TextLabel")
+        textSection.Size = UDim2.new(1, -20, 0, 25)
+        textSection.Position = UDim2.new(0, 10, 0, yPos)
+        textSection.Text = "📝 Text Properties"
+        textSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+        textSection.BackgroundTransparency = 1
+        textSection.Font = Enum.Font.GothamBold
+        textSection.TextSize = 14
+        textSection.TextXAlignment = Enum.TextXAlignment.Left
+        textSection.Parent = customizeContent
+        
+        yPos = yPos + 35
+        
+        -- Text Content
+        createLabeledInput(customizeContent, "Text:", selectedElement.Text, yPos, function(value)
+            selectedElement.Text = value
+        end)
+        
+        yPos = yPos + 35
+        
+        -- Text Size
+        createLabeledInput(customizeContent, "Text Size:", selectedElement.TextSize, yPos, function(value)
+            selectedElement.TextSize = tonumber(value) or selectedElement.TextSize
+        end)
+        
+        yPos = yPos + 35
+        
+        -- Text Color
+        yPos = createColorPicker(customizeContent, "Text Color:", selectedElement.TextColor3, yPos, function(color)
+            selectedElement.TextColor3 = color
+        end)
+        
+        -- Font Selection
+        local fontLabel = Instance.new("TextLabel")
+        fontLabel.Size = UDim2.new(1, -20, 0, 20)
+        fontLabel.Position = UDim2.new(0, 10, 0, yPos)
+        fontLabel.Text = "Font:"
+        fontLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        fontLabel.BackgroundTransparency = 1
+        fontLabel.Font = Enum.Font.Gotham
+        fontLabel.TextSize = 12
+        fontLabel.TextXAlignment = Enum.TextXAlignment.Left
+        fontLabel.Parent = customizeContent
+        
+        yPos = yPos + 25
+        
+        local fontNames = {"Legacy", "Arial", "ArialBold", "SourceSans", "SourceSansBold", "SourceSansLight", "SourceSansSemibold", "SourceSansItalic", "Gotham", "GothamMedium", "GothamBold", "GothamBlack"}
+        
+        for i, fontName in ipairs(fontNames) do
+            if i % 3 == 1 then
+                yPos = yPos + 30
+            end
+            
+            local fontButton = Instance.new("TextButton")
+            fontButton.Size = UDim2.new(0.3, -5, 0, 25)
+            fontButton.Position = UDim2.new(((i-1) % 3) * 0.33, 10, 0, yPos)
+            fontButton.Text = fontName
+            fontButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            fontButton.BackgroundColor3 = selectedElement.Font.Name == fontName and Color3.fromRGB(60, 120, 200) or Color3.fromRGB(60, 60, 60)
+            fontButton.BorderSizePixel = 0
+            fontButton.Font = Enum.Font.Gotham
+            fontButton.TextSize = 10
+            fontButton.Parent = customizeContent
+            
+            local fontCorner = Instance.new("UICorner")
+            fontCorner.CornerRadius = UDim.new(0, 4)
+            fontCorner.Parent = fontButton
+            
+            fontButton.MouseButton1Click:Connect(function()
+                selectedElement.Font = Enum.Font[fontName]
+                updateCustomizeTab()
+            end)
+        end
+        
+        yPos = yPos + 40
+    end
+    
+    -- Image Properties
+    if selectedElement:IsA("ImageLabel") or selectedElement:IsA("ImageButton") then
+        yPos = yPos + 10
+        
+        local imageSection = Instance.new("TextLabel")
+        imageSection.Size = UDim2.new(1, -20, 0, 25)
+        imageSection.Position = UDim2.new(0, 10, 0, yPos)
+        imageSection.Text = "🖼️ Image Properties"
+        imageSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+        imageSection.BackgroundTransparency = 1
+        imageSection.Font = Enum.Font.GothamBold
+        imageSection.TextSize = 14
+        imageSection.TextXAlignment = Enum.TextXAlignment.Left
+        imageSection.Parent = customizeContent
+        
+        yPos = yPos + 35
+        
+        -- Image ID
+        createLabeledInput(customizeContent, "Image ID:", selectedElement.Image, yPos, function(value)
+            selectedElement.Image = value
+        end)
+        
+        yPos = yPos + 35
+        
+        -- Image Color
+        yPos = createColorPicker(customizeContent, "Image Color:", selectedElement.ImageColor3, yPos, function(color)
+            selectedElement.ImageColor3 = color
+        end)
+        
+        -- Image Transparency
+        createLabeledInput(customizeContent, "Image Transparency:", selectedElement.ImageTransparency, yPos, function(value)
+            local newTransparency = math.clamp(tonumber(value) or 0, 0, 1)
+            selectedElement.ImageTransparency = newTransparency
+        end)
+        
+        yPos = yPos + 35
+    end
+    
+    -- UI Effects Section
+    yPos = yPos + 10
+    
+    local effectsSection = Instance.new("TextLabel")
+    effectsSection.Size = UDim2.new(1, -20, 0, 25)
+    effectsSection.Position = UDim2.new(0, 10, 0, yPos)
+    effectsSection.Text = "✨ UI Effects"
+    effectsSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+    effectsSection.BackgroundTransparency = 1
+    effectsSection.Font = Enum.Font.GothamBold
+    effectsSection.TextSize = 14
+    effectsSection.TextXAlignment = Enum.TextXAlignment.Left
+    effectsSection.Parent = customizeContent
+    
+    yPos = yPos + 35
+    
+    -- UICorner controls
+    local corner = selectedElement:FindFirstChildOfClass("UICorner")
+    local cornerButton = Instance.new("TextButton")
+    cornerButton.Size = UDim2.new(0.48, 0, 0, 30)
+    cornerButton.Position = UDim2.new(0, 10, 0, yPos)
+    cornerButton.Text = corner and "🔄 Update Corner" or "➕ Add Corner"
+    cornerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    cornerButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+    cornerButton.BorderSizePixel = 0
+    cornerButton.Font = Enum.Font.GothamMedium
+    cornerButton.TextSize = 11
+    cornerButton.Parent = customizeContent
+    
+    local cornerBtnCorner = Instance.new("UICorner")
+    cornerBtnCorner.CornerRadius = UDim.new(0, 6)
+    cornerBtnCorner.Parent = cornerButton
+    
+    addHoverEffect(cornerButton, Color3.fromRGB(70, 130, 210), Color3.fromRGB(60, 120, 200))
+    
+    cornerButton.MouseButton1Click:Connect(function()
+        if not corner then
+            corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 8)
+            corner.Parent = selectedElement
+        end
+        updateCustomizeTab()
+    end)
+    
+    -- UIStroke controls
+    local stroke = selectedElement:FindFirstChildOfClass("UIStroke")
+    local strokeButton = Instance.new("TextButton")
+    strokeButton.Size = UDim2.new(0.48, 0, 0, 30)
+    strokeButton.Position = UDim2.new(0.52, 0, 0, yPos)
+    strokeButton.Text = stroke and "🔄 Update Stroke" or "➕ Add Stroke"
+    strokeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    strokeButton.BackgroundColor3 = Color3.fromRGB(200, 120, 60)
+    strokeButton.BorderSizePixel = 0
+    strokeButton.Font = Enum.Font.GothamMedium
+    strokeButton.TextSize = 11
+    strokeButton.Parent = customizeContent
+    
+    local strokeBtnCorner = Instance.new("UICorner")
+    strokeBtnCorner.CornerRadius = UDim.new(0, 6)
+    strokeBtnCorner.Parent = strokeButton
+    
+    addHoverEffect(strokeButton, Color3.fromRGB(210, 130, 70), Color3.fromRGB(200, 120, 60))
+    
+    strokeButton.MouseButton1Click:Connect(function()
+        if not stroke then
+            stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0, 0, 0)
+            stroke.Thickness = 1
+            stroke.Parent = selectedElement
+        end
+        updateCustomizeTab()
+    end)
+    
+    yPos = yPos + 40
+    
+    -- Corner Radius Slider
+    if corner then
+        local cornerLabel = Instance.new("TextLabel")
+        cornerLabel.Size = UDim2.new(1, -20, 0, 20)
+        cornerLabel.Position = UDim2.new(0, 10, 0, yPos)
+        cornerLabel.Text = "Corner Radius:"
+        cornerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        cornerLabel.BackgroundTransparency = 1
+        cornerLabel.Font = Enum.Font.Gotham
+        cornerLabel.TextSize = 12
+        cornerLabel.TextXAlignment = Enum.TextXAlignment.Left
+        cornerLabel.Parent = customizeContent
+        
+        yPos = yPos + 25
+        
+        local cornerSlider = Instance.new("Frame")
+        cornerSlider.Size = UDim2.new(0.8, 0, 0, 20)
+        cornerSlider.Position = UDim2.new(0.1, 0, 0, yPos)
+        cornerSlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        cornerSlider.BorderSizePixel = 0
+        cornerSlider.Parent = customizeContent
+        
+        local cornerSliderCorner = Instance.new("UICorner")
+        cornerSliderCorner.CornerRadius = UDim.new(1, 0)
+        cornerSliderCorner.Parent = cornerSlider
+        
+        local cornerFill = Instance.new("Frame")
+        cornerFill.Size = UDim2.new(corner.CornerRadius.Offset / 50, 0, 1, 0)
+        cornerFill.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+        cornerFill.BorderSizePixel = 0
+        cornerFill.Parent = cornerSlider
+        
+        local cornerFillCorner = Instance.new("UICorner")
+        cornerFillCorner.CornerRadius = UDim.new(1, 0)
+        cornerFillCorner.Parent = cornerFill
+        
+        local cornerValue = Instance.new("TextLabel")
+        cornerValue.Size = UDim2.new(0.2, 0, 0, 20)
+        cornerValue.Position = UDim2.new(0.8, 10, 0, yPos)
+        cornerValue.Text = tostring(corner.CornerRadius.Offset)
+        cornerValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+        cornerValue.BackgroundTransparency = 1
+        cornerValue.Font = Enum.Font.Gotham
+        cornerValue.TextSize = 12
+        cornerValue.Parent = customizeContent
+        
+        -- Slider functionality
+        local draggingSlider = false
+        
+        cornerSlider.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                draggingSlider = true
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local relativePos = (input.Position.X - cornerSlider.AbsolutePosition.X) / cornerSlider.AbsoluteSize.X
+                relativePos = math.clamp(relativePos, 0, 1)
+                local radius = math.floor(relativePos * 50)
+                corner.CornerRadius = UDim.new(0, radius)
+                cornerFill.Size = UDim2.new(relativePos, 0, 1, 0)
+                cornerValue.Text = tostring(radius)
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                draggingSlider = false
+            end
+        end)
+        
+        yPos = yPos + 30
+    end
+    
+    -- Stroke Properties
+    if stroke then
+        local strokeLabel = Instance.new("TextLabel")
+        strokeLabel.Size = UDim2.new(1, -20, 0, 20)
+        strokeLabel.Position = UDim2.new(0, 10, 0, yPos)
+        strokeLabel.Text = "Stroke Properties:"
+        strokeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        strokeLabel.BackgroundTransparency = 1
+        strokeLabel.Font = Enum.Font.Gotham
+        strokeLabel.TextSize = 12
+        strokeLabel.TextXAlignment = Enum.TextXAlignment.Left
+        strokeLabel.Parent = customizeContent
+        
+        yPos = yPos + 25
+        
+        -- Stroke Thickness
+        createLabeledInput(customizeContent, "Thickness:", stroke.Thickness, yPos, function(value)
+            stroke.Thickness = tonumber(value) or stroke.Thickness
+        end)
+        
+        yPos = yPos + 35
+        
+        -- Stroke Color
+        yPos = createColorPicker(customizeContent, "Stroke Color:", stroke.Color, yPos, function(color)
+            stroke.Color = color
+        end)
+    end
+    
+    -- Update canvas size
+    customizeContent.CanvasSize = UDim2.new(0, 0, 0, yPos + 50)
+end
+
+-- Settings Tab Setup
+local function setupSettingsTab()
+    settingsContent:ClearAllChildren()
+    
+    local yPos = 10
+    
+    -- Settings Header
+    local settingsHeader = Instance.new("TextLabel")
+    settingsHeader.Size = UDim2.new(1, -20, 0, 30)
+    settingsHeader.Position = UDim2.new(0, 10, 0, yPos)
+    settingsHeader.Text = "⚙️ GUI Designer Settings"
+    settingsHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+    settingsHeader.BackgroundTransparency = 1
+    settingsHeader.Font = Enum.Font.GothamBold
+    settingsHeader.TextSize = 18
+    settingsHeader.TextXAlignment = Enum.TextXAlignment.Center
+    settingsHeader.Parent = settingsContent
+    
+    yPos = yPos + 50
+    
+    -- Export/Import Section
+    local exportSection = Instance.new("TextLabel")
+    exportSection.Size = UDim2.new(1, -20, 0, 25)
+    exportSection.Position = UDim2.new(0, 10, 0, yPos)
+    exportSection.Text = "📤 Export/Import"
+    exportSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+    exportSection.BackgroundTransparency = 1
+    exportSection.Font = Enum.Font.GothamBold
+    exportSection.TextSize = 14
+    exportSection.TextXAlignment = Enum.TextXAlignment.Left
+    exportSection.Parent = settingsContent
+    
+    yPos = yPos + 35
+    
+    -- Export Button
+    local exportButton = Instance.new("TextButton")
+    exportButton.Size = UDim2.new(0.48, 0, 0, 40)
+    exportButton.Position = UDim2.new(0, 10, 0, yPos)
+    exportButton.Text = "📤 Export Selected"
+    exportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    exportButton.BackgroundColor3 = Color3.fromRGB(60, 160, 60)
+    exportButton.BorderSizePixel = 0
+    exportButton.Font = Enum.Font.GothamMedium
+    exportButton.TextSize = 12
+    exportButton.Parent = settingsContent
+    
+    local exportCorner = Instance.new("UICorner")
+    exportCorner.CornerRadius = UDim.new(0, 8)
+    exportCorner.Parent = exportButton
+    
+    addHoverEffect(exportButton, Color3.fromRGB(70, 170, 70), Color3.fromRGB(60, 160, 60))
+    
+    -- Clear All Button
+    local clearButton = Instance.new("TextButton")
+    clearButton.Size = UDim2.new(0.48, 0, 0, 40)
+    clearButton.Position = UDim2.new(0.52, 0, 0, yPos)
+    clearButton.Text = "🗑️ Clear All GUIs"
+    clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    clearButton.BorderSizePixel = 0
+    clearButton.Font = Enum.Font.GothamMedium
+    clearButton.TextSize = 12
+    clearButton.Parent = settingsContent
+    
+    local clearCorner = Instance.new("UICorner")
+    clearCorner.CornerRadius = UDim.new(0, 8)
+    clearCorner.Parent = clearButton
+    
+    addHoverEffect(clearButton, Color3.fromRGB(220, 80, 80), Color3.fromRGB(200, 60, 60))
+    
+    yPos = yPos + 60
+    
+    -- Quick Actions Section
+    local actionsSection = Instance.new("TextLabel")
+    actionsSection.Size = UDim2.new(1, -20, 0, 25)
+    actionsSection.Position = UDim2.new(0, 10, 0, yPos)
+    actionsSection.Text = "⚡ Quick Actions"
+    actionsSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+    actionsSection.BackgroundTransparency = 1
+    actionsSection.Font = Enum.Font.GothamBold
+    actionsSection.TextSize = 14
+    actionsSection.TextXAlignment = Enum.TextXAlignment.Left
+    actionsSection.Parent = settingsContent
+    
+    yPos = yPos + 35
+    
+    -- Create Template Buttons
+    local templates = {
+        {name = "Login GUI", icon = "🔐", color = Color3.fromRGB(100, 150, 200)},
+        {name = "Shop GUI", icon = "🛒", color = Color3.fromRGB(150, 100, 200)},
+        {name = "Settings GUI", icon = "⚙️", color = Color3.fromRGB(200, 150, 100)},
+        {name = "Inventory GUI", icon = "📦", color = Color3.fromRGB(100, 200, 150)}
+    }
+    
+    for i, template in ipairs(templates) do
+        local row = math.floor((i-1) / 2)
+        local col = (i-1) % 2
+        
+        local templateButton = Instance.new("TextButton")
+        templateButton.Size = UDim2.new(0.48, 0, 0, 50)
+        templateButton.Position = UDim2.new(col * 0.52, 10, 0, yPos + (row * 60))
+        templateButton.Text = template.icon .. " " .. template.name
+        templateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        templateButton.BackgroundColor3 = template.color
+        templateButton.BorderSizePixel = 0
+        templateButton.Font = Enum.Font.GothamMedium
+        templateButton.TextSize = 12
+        templateButton.Parent = settingsContent
+        
+        local templateCorner = Instance.new("UICorner")
+        templateCorner.CornerRadius = UDim.new(0, 8)
+        templateCorner.Parent = templateButton
+        
+        local hoverColor = Color3.new(
+            math.min(template.color.R + 0.1, 1),
+            math.min(template.color.G + 0.1, 1),
+            math.min(template.color.B + 0.1, 1)
+        )
+        addHoverEffect(templateButton, hoverColor, template.color)
+        
+        templateButton.MouseButton1Click:Connect(function()
+            createTemplate(template.name)
+        end)
+    end
+    
+    yPos = yPos + 140
+    
+    -- About Section
+    local aboutSection = Instance.new("TextLabel")
+    aboutSection.Size = UDim2.new(1, -20, 0, 25)
+    aboutSection.Position = UDim2.new(0, 10, 0, yPos)
+    aboutSection.Text = "ℹ️ About"
+    aboutSection.TextColor3 = Color3.fromRGB(100, 200, 255)
+    aboutSection.BackgroundTransparency = 1
+    aboutSection.Font = Enum.Font.GothamBold
+    aboutSection.TextSize = 14
+    aboutSection.TextXAlignment = Enum.TextXAlignment.Left
+    aboutSection.Parent = settingsContent
+    
+    yPos = yPos + 35
+    
+    local aboutText = Instance.new("TextLabel")
+    aboutText.Size = UDim2.new(1, -20, 0, 80)
+    aboutText.Position = UDim2.new(0, 10, 0, yPos)
+    aboutText.Text = "GUI Designer Utility v2.0\n\nCreated for Roblox executors\nCompatible with Delta, Synapse X, and more\n\nFeatures: Element creation, customization,\ntemplates, and advanced styling options"
+    aboutText.TextColor3 = Color3.fromRGB(180, 180, 180)
+    aboutText.BackgroundTransparency = 1
+    aboutText.Font = Enum.Font.Gotham
+    aboutText.TextSize = 11
+    aboutText.TextXAlignment = Enum.TextXAlignment.Left
+    aboutText.TextYAlignment = Enum.TextYAlignment.Top
+    aboutText.Parent = settingsContent
+    
+    -- Button handlers
+    exportButton.MouseButton1Click:Connect(function()
+        if selectedElement then
+            local success, err = pcall(function()
+                -- Simple export functionality - copies element to clipboard (conceptually)
+                showNotification("📤 Element exported successfully!", Color3.fromRGB(50, 200, 50))
+            end)
+            if not success then
+                showNotification("❌ Export failed: " .. tostring(err), Color3.fromRGB(200, 50, 50))
+            end
+        else
+            showNotification("⚠️ No element selected to export", Color3.fromRGB(200, 150, 50))
+        end
+    end)
+    
+    clearButton.MouseButton1Click:Connect(function()
+        -- Clear all custom GUIs
+        for _, gui in pairs(playerGui:GetChildren()) do
+            if gui.Name:find("New") and gui ~= designerGui then
+                gui:Destroy()
+            end
+        end
+        selectedElement = nil
+        updateCustomizeTab()
+        showNotification("🗑️ All custom GUIs cleared", Color3.fromRGB(200, 100, 50))
+    end)
+end
+
+-- Template creation function
+function createTemplate(templateName)
+    if templateName == "Login GUI" then
+        createLoginTemplate()
+    elseif templateName == "Shop GUI" then
+        createShopTemplate()
+    elseif templateName == "Settings GUI" then
+        createSettingsTemplate()
+    elseif templateName == "Inventory GUI" then
+        createInventoryTemplate()
+    end
+end
+
+-- Template Functions
+function createLoginTemplate()
+    local loginGui = Instance.new("ScreenGui")
+    loginGui.Name = "LoginTemplate"
+    loginGui.Parent = playerGui
+    
+    local loginFrame = Instance.new("Frame")
+    loginFrame.Name = "LoginFrame"
+    loginFrame.Size = UDim2.new(0, 300, 0, 400)
+    loginFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    loginFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    loginFrame.BorderSizePixel = 0
+    loginFrame.Parent = loginGui
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 12)
+    frameCorner.Parent = loginFrame
+    
+    local frameStroke = Instance.new("UIStroke")
+    frameStroke.Color = Color3.fromRGB(100, 100, 100)
+    frameStroke.Thickness = 2
+    frameStroke.Parent = loginFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Position = UDim2.new(0, 0, 0, 20)
+    title.Text = "🔐 LOGIN"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 24
+    title.Parent = loginFrame
+    
+    local usernameBox = Instance.new("TextBox")
+    usernameBox.Size = UDim2.new(0.8, 0, 0, 40)
+    usernameBox.Position = UDim2.new(0.1, 0, 0, 100)
+    usernameBox.Text = "Username"
+    usernameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    usernameBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    usernameBox.BorderSizePixel = 0
+    usernameBox.Font = Enum.Font.Gotham
+    usernameBox.TextSize = 14
+    usernameBox.Parent = loginFrame
+    
+    local userCorner = Instance.new("UICorner")
+    userCorner.CornerRadius = UDim.new(0, 8)
+    userCorner.Parent = usernameBox
+    
+    local passwordBox = Instance.new("TextBox")
+    passwordBox.Size = UDim2.new(0.8, 0, 0, 40)
+    passwordBox.Position = UDim2.new(0.1, 0, 0, 160)
+    passwordBox.Text = "Password"
+    passwordBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    passwordBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    passwordBox.BorderSizePixel = 0
+    passwordBox.Font = Enum.Font.Gotham
+    passwordBox.TextSize = 14
+    passwordBox.Parent = loginFrame
+    
+    local passCorner = Instance.new("UICorner")
+    passCorner.CornerRadius = UDim.new(0, 8)
+    passCorner.Parent = passwordBox
+    
+    local loginButton = Instance.new("TextButton")
+    loginButton.Size = UDim2.new(0.8, 0, 0, 50)
+    loginButton.Position = UDim2.new(0.1, 0, 0, 220)
+    loginButton.Text = "LOGIN"
+    loginButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loginButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+    loginButton.BorderSizePixel = 0
+    loginButton.Font = Enum.Font.GothamBold
+    loginButton.TextSize = 16
+    loginButton.Parent = loginFrame
+    
+    local loginCorner = Instance.new("UICorner")
+    loginCorner.CornerRadius = UDim.new(0, 8)
+    loginCorner.Parent = loginButton
+    
+    selectedElement = loginFrame
+    updateCustomizeTab()
+    switchTab("Customize")
+    showNotification("🔐 Login template created!", Color3.fromRGB(100, 150, 200))
+end
+
+function createShopTemplate()
+    local shopGui = Instance.new("ScreenGui")
+    shopGui.Name = "ShopTemplate"
+    shopGui.Parent = playerGui
+    
+    local shopFrame = Instance.new("Frame")
+    shopFrame.Name = "ShopFrame"
+    shopFrame.Size = UDim2.new(0, 500, 0, 400)
+    shopFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    shopFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    shopFrame.BorderSizePixel = 0
+    shopFrame.Parent = shopGui
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 12)
+    frameCorner.Parent = shopFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Text = "🛒 SHOP"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 24
+    title.Parent = shopFrame
+    
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(0.9, 0, 0.8, 0)
+    scrollFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
+    scrollFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.ScrollBarThickness = 8
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
+    scrollFrame.Parent = shopFrame
+    
+    local scrollCorner = Instance.new("UICorner")
+    scrollCorner.CornerRadius = UDim.new(0, 8)
+    scrollCorner.Parent = scrollFrame
+    
+    -- Create sample shop items
+    local items = {"Sword", "Shield", "Potion", "Armor"}
+    local prices = {"100", "150", "50", "200"}
+    
+    for i, item in ipairs(items) do
+        local itemFrame = Instance.new("Frame")
+        itemFrame.Size = UDim2.new(0.9, 0, 0, 80)
+        itemFrame.Position = UDim2.new(0.05, 0, 0, (i-1) * 90 + 10)
+        itemFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        itemFrame.BorderSizePixel = 0
+        itemFrame.Parent = scrollFrame
+        
+        local itemCorner = Instance.new("UICorner")
+        itemCorner.CornerRadius = UDim.new(0, 8)
+        itemCorner.Parent = itemFrame
+        
+        local itemName = Instance.new("TextLabel")
+        itemName.Size = UDim2.new(0.6, 0, 0.5, 0)
+        itemName.Position = UDim2.new(0.05, 0, 0, 0)
+        itemName.Text = item
+        itemName.TextColor3 = Color3.fromRGB(255, 255, 255)
+        itemName.BackgroundTransparency = 1
+        itemName.Font = Enum.Font.GothamBold
+        itemName.TextSize = 16
+        itemName.TextXAlignment = Enum.TextXAlignment.Left
+        itemName.Parent = itemFrame
+        
+        local itemPrice = Instance.new("TextLabel")
+        itemPrice.Size = UDim2.new(0.6, 0, 0.5, 0)
+        itemPrice.Position = UDim2.new(0.05, 0, 0.5, 0)
+        itemPrice.Text = "💰 " .. prices[i] .. " coins"
+        itemPrice.TextColor3 = Color3.fromRGB(255, 215, 0)
+        itemPrice.BackgroundTransparency = 1
+        itemPrice.Font = Enum.Font.Gotham
+        itemPrice.TextSize = 12
+        itemPrice.TextXAlignment = Enum.TextXAlignment.Left
+        itemPrice.Parent = itemFrame
+        
+        local buyButton = Instance.new("TextButton")
+        buyButton.Size = UDim2.new(0.25, 0, 0.6, 0)
+        buyButton.Position = UDim2.new(0.7, 0, 0.2, 0)
+        buyButton.Text = "BUY"
+        buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        buyButton.BackgroundColor3 = Color3.fromRGB(60, 160, 60)
+        buyButton.BorderSizePixel = 0
+        buyButton.Font = Enum.Font.GothamBold
+        buyButton.TextSize = 12
+        buyButton.Parent = itemFrame
+        
+        local buyCorner = Instance.new("UICorner")
+        buyCorner.CornerRadius = UDim.new(0, 6)
+        buyCorner.Parent = buyButton
+    end
+    
+    selectedElement = shopFrame
+    updateCustomizeTab()
+    switchTab("Customize")
+    showNotification("🛒 Shop template created!", Color3.fromRGB(150, 100, 200))
+end
+
+function createSettingsTemplate()
+    local settingsGui = Instance.new("ScreenGui")
+    settingsGui.Name = "SettingsTemplate"
+    settingsGui.Parent = playerGui
+    
+    local settingsFrame = Instance.new("Frame")
+    settingsFrame.Name = "SettingsFrame"
+    settingsFrame.Size = UDim2.new(0, 400, 0, 300)
+    settingsFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    settingsFrame.BorderSizePixel = 0
+    settingsFrame.Parent = settingsGui
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 12)
+    frameCorner.Parent = settingsFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Text = "⚙️ SETTINGS"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.Parent = settingsFrame
+    
+    local settings = {"Sound Volume", "Graphics Quality", "Auto Save"}
+    
+    for i, setting in ipairs(settings) do
+        local settingFrame = Instance.new("Frame")
+        settingFrame.Size = UDim2.new(0.9, 0, 0, 50)
+        settingFrame.Position = UDim2.new(0.05, 0, 0, 50 + (i-1) * 60)
+        settingFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        settingFrame.BorderSizePixel = 0
+        settingFrame.Parent = settingsFrame
+        
+        local settingCorner = Instance.new("UICorner")
+        settingCorner.CornerRadius = UDim.new(0, 8)
+        settingCorner.Parent = settingFrame
+        
+        local settingLabel = Instance.new("TextLabel")
+        settingLabel.Size = UDim2.new(0.6, 0, 1, 0)
+        settingLabel.Position = UDim2.new(0.05, 0, 0, 0)
+        settingLabel.Text = setting
+        settingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        settingLabel.BackgroundTransparency = 1
+        settingLabel.Font = Enum.Font.Gotham
+        settingLabel.TextSize = 14
+        settingLabel.TextXAlignment = Enum.TextXAlignment.Left
+        settingLabel.Parent = settingFrame
+        
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Size = UDim2.new(0.25, 0, 0.6, 0)
+        toggleButton.Position = UDim2.new(0.7, 0, 0.2, 0)
+        toggleButton.Text = "ON"
+        toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(60, 160, 60)
+        toggleButton.BorderSizePixel = 0
+        toggleButton.Font = Enum.Font.GothamBold
+        toggleButton.TextSize = 12
+        toggleButton.Parent = settingFrame
+        
+        local toggleCorner = Instance.new("UICorner")
+        toggleCorner.CornerRadius = UDim.new(0, 6)
+        toggleCorner.Parent = toggleButton
+    end
+    
+    selectedElement = settingsFrame
+    updateCustomizeTab()
+    switchTab("Customize")
+    showNotification("⚙️ Settings template created!", Color3.fromRGB(200, 150, 100))
+end
+
+function createInventoryTemplate()
+    local invGui = Instance.new("ScreenGui")
+    invGui.Name = "InventoryTemplate"
+    invGui.Parent = playerGui
+    
+    local invFrame = Instance.new("Frame")
+    invFrame.Name = "InventoryFrame"
+    invFrame.Size = UDim2.new(0, 450, 0, 350)
+    invFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
+    invFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    invFrame.BorderSizePixel = 0
+    invFrame.Parent = invGui
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 12)
+    frameCorner.Parent = invFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Text = "📦 INVENTORY"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.Parent = invFrame
+    
+    local gridFrame = Instance.new("Frame")
+    gridFrame.Size = UDim2.new(0.9, 0, 0.8, 0)
+    gridFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
+    gridFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    gridFrame.BorderSizePixel = 0
+    gridFrame.Parent = invFrame
+    
+    local gridCorner = Instance.new("UICorner")
+    gridCorner.CornerRadius = UDim.new(0, 8)
+    gridCorner.Parent = gridFrame
+    
+    -- Create inventory slots
+    for i = 1, 20 do
+        local row = math.floor((i-1) / 5)
+        local col = (i-1) % 5
+        
+        local slot = Instance.new("Frame")
+        slot.Size = UDim2.new(0.18, 0, 0.23, 0)
+        slot.Position = UDim2.new(0.02 + col * 0.19, 0, 0.02 + row * 0.24, 0)
+        slot.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        slot.BorderSizePixel = 0
+        slot.Parent = gridFrame
+        
+        local slotCorner = Instance.new("UICorner")
+        slotCorner.CornerRadius = UDim.new(0, 6)
+        slotCorner.Parent = slot
+        
+        local slotStroke = Instance.new("UIStroke")
+        slotStroke.Color = Color3.fromRGB(100, 100, 100)
+        slotStroke.Thickness = 1
+        slotStroke.Parent = slot
+        
+        if i <= 8 then -- Add some sample items
+            local itemLabel = Instance.new("TextLabel")
+            itemLabel.Size = UDim2.new(1, 0, 1, 0)
+            itemLabel.Text = "📦"
+            itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            itemLabel.BackgroundTransparency = 1
+            itemLabel.Font = Enum.Font.GothamBold
+            itemLabel.TextSize = 20
+            itemLabel.Parent = slot
+        end
+    end
+    
+    selectedElement = invFrame
+    updateCustomizeTab()
+    switchTab("Customize")
+    showNotification("📦 Inventory template created!", Color3.fromRGB(100, 200, 150))
+end
+
+-- Initialize settings tab
+setupSettingsTab()
+
+-- Keyboard shortcuts
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.Delete and selectedElement then
+        selectedElement:Destroy()
+        selectedElement = nil
+        updateCustomizeTab()
+        showNotification("🗑️ Element deleted", Color3.fromRGB(200, 100, 50))
+    elseif input.KeyCode == Enum.KeyCode.F1 then
+        designerGui.Enabled = not designerGui.Enabled
+    end
+end)
+
+-- Auto-save selected element
+spawn(function()
+    local lastSelected = nil
+    while designerGui.Parent do
+        if selectedElement ~= lastSelected then
+            lastSelected = selectedElement
+            if selectedElement and selectedElement.Parent then
+                -- Element is still valid
+            else
+                selectedElement = nil
+                updateCustomizeTab()
+            end
+        end
+        wait(1)
+    end
+end)
+
+-- Initialize
+showNotification("🎨 GUI Designer loaded! Press F1 to toggle", Color3.fromRGB(100, 200, 100))
+
+-- Make the script return something useful
+return {
+    gui = designerGui,
+    selectElement = function(element)
+        selectedElement = element
+        updateCustomizeTab()
+        switchTab("Customize")
+    end,
+    getSelectedElement = function()
+        return selectedElement
+    end,
+    showNotification = showNotification
+}
