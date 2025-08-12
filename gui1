@@ -1,4 +1,4 @@
--- Roblox UI Designer Pro with Advanced Editing Features
+-- Ultimate Roblox UI Designer Pro
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -20,7 +20,8 @@ local colors = {
     success = Color3.fromRGB(80, 200, 120),
     warning = Color3.fromRGB(220, 180, 60),
     error = Color3.fromRGB(220, 80, 80),
-    highlight = Color3.fromRGB(100, 180, 255)
+    highlight = Color3.fromRGB(100, 180, 255),
+    panel = Color3.fromRGB(40, 42, 50)
 }
 
 -- Main UI Designer GUI
@@ -33,10 +34,10 @@ designerGui.Parent = game:GetService("CoreGui")
 -- Main Container with Glass Morphism Effect
 local mainContainer = Instance.new("Frame")
 mainContainer.Name = "MainContainer"
-mainContainer.Size = UDim2.new(0, 500, 0, 650)
-mainContainer.Position = UDim2.new(0.5, -250, 0.5, -325)
+mainContainer.Size = UDim2.new(0, 520, 0, 700)
+mainContainer.Position = UDim2.new(0.5, -260, 0.5, -350)
 mainContainer.BackgroundColor3 = colors.background
-mainContainer.BackgroundTransparency = 0.1
+mainContainer.BackgroundTransparency = 0.05
 mainContainer.BorderSizePixel = 0
 mainContainer.Parent = designerGui
 
@@ -49,7 +50,7 @@ containerCorner.Parent = mainContainer
 local containerStroke = Instance.new("UIStroke")
 containerStroke.Color = Color3.fromRGB(80, 90, 110)
 containerStroke.Thickness = 1
-containerStroke.Transparency = 0.7
+containerStroke.Transparency = 0.5
 containerStroke.Parent = mainContainer
 
 -- Drop Shadow
@@ -157,17 +158,16 @@ addHoverEffect(minimizeButton, Color3.fromRGB(100, 110, 130), colors.secondary)
 -- Tab Bar
 local tabBar = Instance.new("Frame")
 tabBar.Name = "TabBar"
-tabBar.Size = UDim2.new(1, 0, 0, 40)
+tabBar.Size = UDim2.new(1, 0, 0, 50)
 tabBar.Position = UDim2.new(0, 0, 0, 42)
-tabBar.BackgroundColor3 = colors.background
-tabBar.BackgroundTransparency = 0.3
+tabBar.BackgroundColor3 = colors.panel
 tabBar.BorderSizePixel = 0
 tabBar.Parent = mainContainer
 
 local tabIndicator = Instance.new("Frame")
 tabIndicator.Name = "TabIndicator"
-tabIndicator.Size = UDim2.new(0.2, 0, 0, 3)
-tabIndicator.Position = UDim2.new(0, 0, 1, -3)
+tabIndicator.Size = UDim2.new(0.2, 0, 0, 4)
+tabIndicator.Position = UDim2.new(0, 0, 1, -4)
 tabIndicator.BackgroundColor3 = colors.primary
 tabIndicator.BorderSizePixel = 0
 tabIndicator.Parent = tabBar
@@ -189,8 +189,8 @@ for i, tab in ipairs(tabs) do
     tabButton.Text = tab.icon .. " " .. tab.name
     tabButton.TextColor3 = i == 1 and colors.primary or Color3.fromRGB(180, 180, 180)
     tabButton.BackgroundTransparency = 1
-    tabButton.Font = Enum.Font.GothamMedium
-    tabButton.TextSize = 13
+    tabButton.Font = Enum.Font.GothamBold
+    tabButton.TextSize = 14
     tabButton.Parent = tabBar
     
     tabButtons[tab.name] = tabButton
@@ -199,8 +199,8 @@ end
 -- Content Frame
 local contentFrame = Instance.new("Frame")
 contentFrame.Name = "ContentFrame"
-contentFrame.Size = UDim2.new(1, -20, 1, -102)
-contentFrame.Position = UDim2.new(0, 10, 0, 92)
+contentFrame.Size = UDim2.new(1, -20, 1, -112)
+contentFrame.Position = UDim2.new(0, 10, 0, 102)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainContainer
 
@@ -211,12 +211,18 @@ for i, tab in ipairs(tabs) do
     tabContent.Name = tab.name .. "Content"
     tabContent.Size = UDim2.new(1, 0, 1, 0)
     tabContent.BackgroundTransparency = 1
-    tabContent.ScrollBarThickness = 6
+    tabContent.ScrollBarThickness = 8
     tabContent.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     tabContent.BorderSizePixel = 0
     tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
     tabContent.Visible = i == 1
+    tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
     tabContent.Parent = contentFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 10)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = tabContent
     
     tabContents[tab.name] = tabContent
 end
@@ -226,34 +232,38 @@ local dragging = false
 local dragStart = nil
 local startPos = nil
 
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+local function onMainDragStart(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = mainContainer.Position
         
         -- Animate button press
-        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.1), {Size = UDim2.new(0, 495, 0, 645)})
+        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.1), {Size = UDim2.new(0, 515, 0, 695)})
         tween:Play()
     end
-end)
+end
 
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+local function onMainDrag(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         mainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
-end)
+end
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+local function onMainDragEnd(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
         
         -- Animate button release
-        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.1), {Size = UDim2.new(0, 500, 0, 650)})
+        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.1), {Size = UDim2.new(0, 520, 0, 700)})
         tween:Play()
     end
-end)
+end
+
+titleBar.InputBegan:Connect(onMainDragStart)
+UserInputService.InputChanged:Connect(onMainDrag)
+UserInputService.InputEnded:Connect(onMainDragEnd)
 
 -- Minimize functionality
 local isMinimized = false
@@ -263,7 +273,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
         originalSize = mainContainer.Size
-        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 500, 0, 42)})
+        local tween = TweenService:Create(mainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 520, 0, 42)})
         tween:Play()
         minimizeButton.Text = "+"
     else
@@ -302,7 +312,7 @@ local function switchTab(tabName)
     
     -- Update tab indicator position
     local indicatorTween = TweenService:Create(tabIndicator, TweenInfo.new(0.2), {
-        Position = UDim2.new(tabIndex * 0.2, 0, 1, -3)
+        Position = UDim2.new(tabIndex * 0.2, 0, 1, -4)
     })
     indicatorTween:Play()
     
@@ -360,7 +370,7 @@ local yPos = 10
 for elementType, properties in pairs(createElements) do
     local button = Instance.new("TextButton")
     button.Name = elementType .. "Button"
-    button.Size = UDim2.new(1, -20, 0, 70)
+    button.Size = UDim2.new(1, -20, 0, 80)
     button.Position = UDim2.new(0, 10, 0, yPos)
     button.Text = ""
     button.TextColor3 = colors.text
@@ -368,49 +378,50 @@ for elementType, properties in pairs(createElements) do
     button.BorderSizePixel = 0
     button.Font = Enum.Font.Gotham
     button.TextSize = 12
+    button.LayoutOrder = yPos
     button.Parent = createContent
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.CornerRadius = UDim.new(0, 10)
     buttonCorner.Parent = button
     
     local buttonStroke = Instance.new("UIStroke")
     buttonStroke.Color = Color3.fromRGB(60, 70, 80)
-    buttonStroke.Thickness = 1
+    buttonStroke.Thickness = 2
     buttonStroke.Parent = button
     
     -- Icon
     local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0, 40, 0, 40)
-    icon.Position = UDim2.new(0, 10, 0, 15)
+    icon.Size = UDim2.new(0, 50, 0, 50)
+    icon.Position = UDim2.new(0, 15, 0.5, -25)
     icon.Text = properties.Icon
     icon.TextColor3 = colors.primary
     icon.BackgroundTransparency = 1
     icon.Font = Enum.Font.GothamBold
-    icon.TextSize = 24
+    icon.TextSize = 30
     icon.Parent = button
     
     -- Title
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -60, 0, 25)
-    title.Position = UDim2.new(0, 55, 0, 10)
+    title.Size = UDim2.new(1, -80, 0, 30)
+    title.Position = UDim2.new(0, 75, 0, 15)
     title.Text = "Create " .. elementType
     title.TextColor3 = colors.text
     title.BackgroundTransparency = 1
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 14
+    title.TextSize = 16
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = button
     
     -- Description
     local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(1, -60, 0, 25)
-    desc.Position = UDim2.new(0, 55, 0, 30)
+    desc.Size = UDim2.new(1, -80, 0, 30)
+    desc.Position = UDim2.new(0, 75, 0, 40)
     desc.Text = properties.Description
     desc.TextColor3 = Color3.fromRGB(180, 180, 180)
     desc.BackgroundTransparency = 1
     desc.Font = Enum.Font.Gotham
-    desc.TextSize = 11
+    desc.TextSize = 12
     desc.TextXAlignment = Enum.TextXAlignment.Left
     desc.Parent = button
     
@@ -421,10 +432,8 @@ for elementType, properties in pairs(createElements) do
         createUIElement(elementType)
     end)
     
-    yPos = yPos + 80
+    yPos = yPos + 90
 end
-
-createContent.CanvasSize = UDim2.new(0, 0, 0, yPos + 10)
 
 -- UI Canvas for created elements
 local uiCanvas = Instance.new("ScreenGui")
@@ -435,7 +444,7 @@ uiCanvas.Parent = playerGui
 
 -- Currently selected element
 local selectedElement = nil
-local dragHandleSize = 12
+local dragHandleSize = 24 -- Larger handles for better mobile interaction
 
 -- Function to create UI elements
 function createUIElement(elementType)
@@ -460,12 +469,12 @@ function createUIElement(elementType)
         stroke.Thickness = 2
         stroke.Parent = newElement
     elseif elementType == "TextLabel" then
-        newElement.Size = UDim2.new(0, 150, 0, 50)
-        newElement.Position = UDim2.new(0.5, -75, 0.5, -25)
+        newElement.Size = UDim2.new(0, 200, 0, 60)
+        newElement.Position = UDim2.new(0.5, -100, 0.5, -30)
         newElement.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
         newElement.Text = "Text Label"
         newElement.TextColor3 = Color3.fromRGB(255, 255, 255)
-        newElement.TextSize = 14
+        newElement.TextSize = 16
         newElement.Font = Enum.Font.Gotham
         newElement.BorderSizePixel = 0
         
@@ -473,12 +482,12 @@ function createUIElement(elementType)
         corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = newElement
     elseif elementType == "TextButton" then
-        newElement.Size = UDim2.new(0, 150, 0, 50)
-        newElement.Position = UDim2.new(0.5, -75, 0.5, -25)
+        newElement.Size = UDim2.new(0, 200, 0, 60)
+        newElement.Position = UDim2.new(0.5, -100, 0.5, -30)
         newElement.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
         newElement.Text = "Click Me"
         newElement.TextColor3 = Color3.fromRGB(255, 255, 255)
-        newElement.TextSize = 14
+        newElement.TextSize = 16
         newElement.Font = Enum.Font.Gotham
         newElement.BorderSizePixel = 0
         
@@ -486,8 +495,8 @@ function createUIElement(elementType)
         corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = newElement
     elseif elementType == "ImageLabel" then
-        newElement.Size = UDim2.new(0, 150, 0, 150)
-        newElement.Position = UDim2.new(0.5, -75, 0.5, -75)
+        newElement.Size = UDim2.new(0, 200, 0, 200)
+        newElement.Position = UDim2.new(0.5, -100, 0.5, -100)
         newElement.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
         newElement.BorderSizePixel = 0
         newElement.Image = "rbxassetid://111490672" -- Default placeholder image
@@ -496,8 +505,8 @@ function createUIElement(elementType)
         corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = newElement
     else
-        newElement.Size = UDim2.new(0, 150, 0, 150)
-        newElement.Position = UDim2.new(0.5, -75, 0.5, -75)
+        newElement.Size = UDim2.new(0, 200, 0, 200)
+        newElement.Position = UDim2.new(0.5, -100, 0.5, -100)
         newElement.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
         newElement.BorderSizePixel = 0
         
@@ -558,7 +567,7 @@ function setupElementControls(element)
     
     -- Dragging functionality
     element.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = element.Position
@@ -568,7 +577,7 @@ function setupElementControls(element)
     
     -- Resizing functionality
     local function handleResize(handle, input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = true
             resizeHandle = handle
             resizeStart = input.Position
@@ -584,19 +593,19 @@ function setupElementControls(element)
     bottomRight.InputBegan:Connect(function(input) handleResize("BottomRight", input) end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             element.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
         
-        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - resizeStart
             local newSize = startSize
             
             if resizeHandle == "TopLeft" then
                 newSize = UDim2.new(
-                    newSize.X.Scale, math.max(20, newSize.X.Offset - delta.X),
-                    newSize.Y.Scale, math.max(20, newSize.Y.Offset - delta.Y)
+                    newSize.X.Scale, math.max(40, newSize.X.Offset - delta.X),
+                    newSize.Y.Scale, math.max(40, newSize.Y.Offset - delta.Y)
                 )
                 element.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
@@ -604,8 +613,8 @@ function setupElementControls(element)
                 )
             elseif resizeHandle == "TopRight" then
                 newSize = UDim2.new(
-                    newSize.X.Scale, math.max(20, newSize.X.Offset + delta.X),
-                    newSize.Y.Scale, math.max(20, newSize.Y.Offset - delta.Y)
+                    newSize.X.Scale, math.max(40, newSize.X.Offset + delta.X),
+                    newSize.Y.Scale, math.max(40, newSize.Y.Offset - delta.Y)
                 )
                 element.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset,
@@ -613,8 +622,8 @@ function setupElementControls(element)
                 )
             elseif resizeHandle == "BottomLeft" then
                 newSize = UDim2.new(
-                    newSize.X.Scale, math.max(20, newSize.X.Offset - delta.X),
-                    newSize.Y.Scale, math.max(20, newSize.Y.Offset + delta.Y)
+                    newSize.X.Scale, math.max(40, newSize.X.Offset - delta.X),
+                    newSize.Y.Scale, math.max(40, newSize.Y.Offset + delta.Y)
                 )
                 element.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
@@ -622,8 +631,8 @@ function setupElementControls(element)
                 )
             elseif resizeHandle == "BottomRight" then
                 newSize = UDim2.new(
-                    newSize.X.Scale, math.max(20, newSize.X.Offset + delta.X),
-                    newSize.Y.Scale, math.max(20, newSize.Y.Offset + delta.Y)
+                    newSize.X.Scale, math.max(40, newSize.X.Offset + delta.X),
+                    newSize.Y.Scale, math.max(40, newSize.Y.Offset + delta.Y)
                 )
             end
             
@@ -632,7 +641,7 @@ function setupElementControls(element)
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
             resizing = false
         end
@@ -658,7 +667,7 @@ function createDragHandle(name, position)
     
     -- Add hover effect to handles
     handle.MouseEnter:Connect(function()
-        TweenService:Create(handle, TweenInfo.new(0.2), {Size = UDim2.new(0, dragHandleSize+4, 0, dragHandleSize+4)}):Play()
+        TweenService:Create(handle, TweenInfo.new(0.2), {Size = UDim2.new(0, dragHandleSize+6, 0, dragHandleSize+6)}):Play()
     end)
     
     handle.MouseLeave:Connect(function()
@@ -679,16 +688,54 @@ function selectElement(element)
     
     selectedElement = element
     
+    if not element then
+        updatePropertiesTab()
+        return
+    end
+    
     -- Add selection indicator
     local selectionBox = Instance.new("SelectionBox")
     selectionBox.Name = "SelectionBox"
     selectionBox.Adornee = element
     selectionBox.Color3 = colors.primary
-    selectionBox.LineThickness = 0.05
+    selectionBox.LineThickness = 0.1
     selectionBox.Parent = element
     
     -- Update properties tab
     updatePropertiesTab()
+end
+
+-- Create a property panel section
+function createSection(parent, title, yPos)
+    local sectionFrame = Instance.new("Frame")
+    sectionFrame.Size = UDim2.new(1, -20, 0, 40)
+    sectionFrame.Position = UDim2.new(0, 10, 0, yPos)
+    sectionFrame.BackgroundColor3 = colors.panel
+    sectionFrame.BorderSizePixel = 0
+    sectionFrame.LayoutOrder = yPos
+    sectionFrame.Parent = parent
+    
+    local sectionCorner = Instance.new("UICorner")
+    sectionCorner.CornerRadius = UDim.new(0, 8)
+    sectionCorner.Parent = sectionFrame
+    
+    local sectionStroke = Instance.new("UIStroke")
+    sectionStroke.Color = Color3.fromRGB(60, 70, 80)
+    sectionStroke.Thickness = 1
+    sectionStroke.Parent = sectionFrame
+    
+    local sectionLabel = Instance.new("TextLabel")
+    sectionLabel.Size = UDim2.new(1, -20, 1, 0)
+    sectionLabel.Position = UDim2.new(0, 10, 0, 0)
+    sectionLabel.Text = title
+    sectionLabel.TextColor3 = colors.primary
+    sectionLabel.BackgroundTransparency = 1
+    sectionLabel.Font = Enum.Font.GothamBold
+    sectionLabel.TextSize = 16
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sectionLabel.Parent = sectionFrame
+    
+    return sectionFrame
 end
 
 -- Update Properties Tab
@@ -704,97 +751,98 @@ function updatePropertiesTab()
         noSelection.TextColor3 = colors.error
         noSelection.BackgroundTransparency = 1
         noSelection.Font = Enum.Font.GothamBold
-        noSelection.TextSize = 14
+        noSelection.TextSize = 16
         noSelection.TextXAlignment = Enum.TextXAlignment.Center
+        noSelection.LayoutOrder = 1
         noSelection.Parent = propertiesContent
         return
     end
     
     local yPos = 10
     
-    -- Element Info
+    -- Element Info section
+    local infoSection = createSection(propertiesContent, "📝 Element Info", yPos)
+    yPos += 50
+    
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(1, -20, 0, 30)
-    infoLabel.Position = UDim2.new(0, 10, 0, yPos)
-    infoLabel.Text = "📝 Editing: " .. selectedElement.ClassName .. " (" .. selectedElement.Name .. ")"
+    infoLabel.Position = UDim2.new(0, 10, 0, 5)
+    infoLabel.Text = "Editing: " .. selectedElement.ClassName .. " (" .. selectedElement.Name .. ")"
     infoLabel.TextColor3 = colors.text
     infoLabel.BackgroundTransparency = 1
-    infoLabel.Font = Enum.Font.GothamBold
-    infoLabel.TextSize = 16
+    infoLabel.Font = Enum.Font.Gotham
+    infoLabel.TextSize = 14
     infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-    infoLabel.Parent = propertiesContent
+    infoLabel.Parent = infoSection
     
-    yPos = yPos + 40
+    -- Transform section
+    local transformSection = createSection(propertiesContent, "📐 Transform", yPos)
+    yPos += 50
     
-    -- Common properties
-    createPropertyInput(propertiesContent, "Name", selectedElement.Name, yPos, function(value)
+    createPropertyInput(transformSection, "Name", selectedElement.Name, 10, function(value)
         selectedElement.Name = value
-        infoLabel.Text = "📝 Editing: " .. selectedElement.ClassName .. " (" .. selectedElement.Name .. ")"
+        infoLabel.Text = "Editing: " .. selectedElement.ClassName .. " (" .. selectedElement.Name .. ")"
     end)
-    yPos = yPos + 40
     
-    createVector2Input(propertiesContent, "Position", 
+    createVector2Input(transformSection, "Position", 
         selectedElement.Position.X.Offset, selectedElement.Position.Y.Offset, 
-        yPos, function(x, y)
+        50, function(x, y)
             selectedElement.Position = UDim2.new(0, x, 0, y)
     end)
-    yPos = yPos + 60
     
-    createVector2Input(propertiesContent, "Size", 
+    createVector2Input(transformSection, "Size", 
         selectedElement.Size.X.Offset, selectedElement.Size.Y.Offset, 
-        yPos, function(w, h)
+        120, function(w, h)
             selectedElement.Size = UDim2.new(0, w, 0, h)
     end)
-    yPos = yPos + 60
     
-    createColorPicker(propertiesContent, "Background Color", 
-        selectedElement.BackgroundColor3, yPos, function(color)
+    -- Appearance section
+    local appearanceSection = createSection(propertiesContent, "🎨 Appearance", yPos)
+    yPos += 50
+    
+    createColorPicker(appearanceSection, "Background Color", 
+        selectedElement.BackgroundColor3, 10, function(color)
             selectedElement.BackgroundColor3 = color
     end)
-    yPos = yPos + 100
     
-    createSlider(propertiesContent, "Transparency", 
-        selectedElement.BackgroundTransparency, 0, 1, yPos, function(value)
+    createSlider(appearanceSection, "Transparency", 
+        selectedElement.BackgroundTransparency, 0, 1, 110, function(value)
             selectedElement.BackgroundTransparency = value
     end)
-    yPos = yPos + 60
     
-    createSlider(propertiesContent, "Border Size", 
-        selectedElement.BorderSizePixel, 0, 10, yPos, function(value)
+    createSlider(appearanceSection, "Border Size", 
+        selectedElement.BorderSizePixel, 0, 10, 180, function(value)
             selectedElement.BorderSizePixel = value
     end)
-    yPos = yPos + 60
     
-    createToggle(propertiesContent, "Visible", 
-        selectedElement.Visible, yPos, function(value)
+    createToggle(appearanceSection, "Visible", 
+        selectedElement.Visible, 250, function(value)
             selectedElement.Visible = value
     end)
-    yPos = yPos + 50
     
-    createToggle(propertiesContent, "Reset on Spawn", 
-        selectedElement.ResetOnSpawn, yPos, function(value)
+    createToggle(appearanceSection, "Reset on Spawn", 
+        selectedElement.ResetOnSpawn, 310, function(value)
             selectedElement.ResetOnSpawn = value
     end)
-    yPos = yPos + 50
     
     -- Text-specific properties
     if selectedElement:IsA("TextLabel") or selectedElement:IsA("TextButton") or selectedElement:IsA("TextBox") then
-        createPropertyInput(propertiesContent, "Text", selectedElement.Text, yPos, function(value)
+        local textSection = createSection(propertiesContent, "🔤 Text Properties", yPos)
+        yPos += 50
+        
+        createPropertyInput(textSection, "Text", selectedElement.Text, 10, function(value)
             selectedElement.Text = value
         end)
-        yPos = yPos + 40
         
-        createSlider(propertiesContent, "Text Size", 
-            selectedElement.TextSize, 8, 50, yPos, function(value)
+        createSlider(textSection, "Text Size", 
+            selectedElement.TextSize, 8, 50, 50, function(value)
                 selectedElement.TextSize = value
         end)
-        yPos = yPos + 60
         
-        createColorPicker(propertiesContent, "Text Color", 
-            selectedElement.TextColor3, yPos, function(color)
+        createColorPicker(textSection, "Text Color", 
+            selectedElement.TextColor3, 120, function(color)
                 selectedElement.TextColor3 = color
         end)
-        yPos = yPos + 100
         
         -- Font selection
         local fonts = {
@@ -803,144 +851,123 @@ function updatePropertiesTab()
             "Gotham", "GothamBlack", "GothamBold", "GothamMedium", "GothamLight"
         }
         
-        createDropdown(propertiesContent, "Font", 
-            selectedElement.Font.Name, fonts, yPos, function(value)
+        createDropdown(textSection, "Font", 
+            selectedElement.Font.Name, fonts, 220, function(value)
                 selectedElement.Font = Enum.Font[value]
         end)
-        yPos = yPos + 60
         
         -- Text stroke
-        createToggle(propertiesContent, "Text Stroke", 
-            selectedElement.TextStrokeTransparency < 1, yPos, function(value)
+        createToggle(textSection, "Text Stroke", 
+            selectedElement.TextStrokeTransparency < 1, 290, function(value)
                 if value then
                     selectedElement.TextStrokeTransparency = 0
                 else
                     selectedElement.TextStrokeTransparency = 1
                 end
         end)
-        yPos = yPos + 50
         
         if selectedElement.TextStrokeTransparency < 1 then
-            createSlider(propertiesContent, "Text Stroke Transparency", 
-                selectedElement.TextStrokeTransparency, 0, 1, yPos, function(value)
+            createSlider(textSection, "Text Stroke Transparency", 
+                selectedElement.TextStrokeTransparency, 0, 1, 350, function(value)
                     selectedElement.TextStrokeTransparency = value
             end)
-            yPos = yPos + 60
             
-            createSlider(propertiesContent, "Text Stroke Thickness", 
-                selectedElement.TextStrokeWidth, 1, 10, yPos, function(value)
+            createSlider(textSection, "Text Stroke Thickness", 
+                selectedElement.TextStrokeWidth, 1, 10, 420, function(value)
                     selectedElement.TextStrokeWidth = value
             end)
-            yPos = yPos + 60
             
-            createColorPicker(propertiesContent, "Text Stroke Color", 
-                selectedElement.TextStrokeColor3, yPos, function(color)
+            createColorPicker(textSection, "Text Stroke Color", 
+                selectedElement.TextStrokeColor3, 490, function(color)
                     selectedElement.TextStrokeColor3 = color
             end)
-            yPos = yPos + 100
         end
         
         -- Text wrapping
-        createToggle(propertiesContent, "Text Wrapped", 
-            selectedElement.TextWrapped, yPos, function(value)
+        createToggle(textSection, "Text Wrapped", 
+            selectedElement.TextWrapped, 590, function(value)
                 selectedElement.TextWrapped = value
         end)
-        yPos = yPos + 50
         
         -- Text scaled
-        createToggle(propertiesContent, "Text Scaled", 
-            selectedElement.TextScaled, yPos, function(value)
+        createToggle(textSection, "Text Scaled", 
+            selectedElement.TextScaled, 650, function(value)
                 selectedElement.TextScaled = value
         end)
-        yPos = yPos + 50
     end
     
     -- ImageLabel-specific properties
     if selectedElement:IsA("ImageLabel") then
-        createPropertyInput(propertiesContent, "Image ID", selectedElement.Image, yPos, function(value)
+        local imageSection = createSection(propertiesContent, "🖼️ Image Properties", yPos)
+        yPos += 50
+        
+        createPropertyInput(imageSection, "Image ID", selectedElement.Image, 10, function(value)
             selectedElement.Image = value
         end)
-        yPos = yPos + 40
         
-        createColorPicker(propertiesContent, "Image Color", 
-            selectedElement.ImageColor3, yPos, function(color)
+        createColorPicker(imageSection, "Image Color", 
+            selectedElement.ImageColor3, 60, function(color)
                 selectedElement.ImageColor3 = color
         end)
-        yPos = yPos + 100
         
         -- Scale types
         local scaleTypes = {
             "Stretch", "Slice", "Tile", "Fit", "Crop"
         }
         
-        createDropdown(propertiesContent, "Scale Type", 
-            selectedElement.ScaleType.Name, scaleTypes, yPos, function(value)
+        createDropdown(imageSection, "Scale Type", 
+            selectedElement.ScaleType.Name, scaleTypes, 160, function(value)
                 selectedElement.ScaleType = Enum.ScaleType[value]
         end)
-        yPos = yPos + 60
         
-        createSlider(propertiesContent, "Slice Scale", 
-            selectedElement.SliceScale, 0.01, 1, yPos, function(value)
+        createSlider(imageSection, "Slice Scale", 
+            selectedElement.SliceScale, 0.01, 1, 230, function(value)
                 selectedElement.SliceScale = value
         end)
-        yPos = yPos + 60
         
-        createToggle(propertiesContent, "Tile Background", 
-            selectedElement.TileSize.Offset > 0, yPos, function(value)
+        createToggle(imageSection, "Tile Background", 
+            selectedElement.TileSize.Offset > 0, 300, function(value)
                 if value then
                     selectedElement.TileSize = UDim2.new(0, 100, 0, 100)
                 else
                     selectedElement.TileSize = UDim2.new(0, 0, 0, 0)
                 end
         end)
-        yPos = yPos + 50
     end
     
     -- UI Effects section
-    local effectsLabel = Instance.new("TextLabel")
-    effectsLabel.Size = UDim2.new(1, -20, 0, 30)
-    effectsLabel.Position = UDim2.new(0, 10, 0, yPos)
-    effectsLabel.Text = "✨ UI Effects"
-    effectsLabel.TextColor3 = colors.primary
-    effectsLabel.BackgroundTransparency = 1
-    effectsLabel.Font = Enum.Font.GothamBold
-    effectsLabel.TextSize = 16
-    effectsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    effectsLabel.Parent = propertiesContent
-    yPos = yPos + 40
+    local effectsSection = createSection(propertiesContent, "✨ UI Effects", yPos)
+    yPos += 50
     
     -- Add Corner button
-    local cornerBtn = createEffectButton("Add Corner", yPos, propertiesContent)
+    local cornerBtn = createEffectButton("Add Corner", 10, effectsSection)
     cornerBtn.MouseButton1Click:Connect(function()
         if not selectedElement:FindFirstChildOfClass("UICorner") then
             local corner = Instance.new("UICorner")
             corner.Parent = selectedElement
         end
     end)
-    yPos = yPos + 40
     
     -- Add Stroke button
-    local strokeBtn = createEffectButton("Add Stroke", yPos, propertiesContent)
+    local strokeBtn = createEffectButton("Add Stroke", 60, effectsSection)
     strokeBtn.MouseButton1Click:Connect(function()
         if not selectedElement:FindFirstChildOfClass("UIStroke") then
             local stroke = Instance.new("UIStroke")
             stroke.Parent = selectedElement
         end
     end)
-    yPos = yPos + 40
     
     -- Add Gradient button
-    local gradientBtn = createEffectButton("Add Gradient", yPos, propertiesContent)
+    local gradientBtn = createEffectButton("Add Gradient", 110, effectsSection)
     gradientBtn.MouseButton1Click:Connect(function()
         if not selectedElement:FindFirstChildOfClass("UIGradient") then
             local gradient = Instance.new("UIGradient")
             gradient.Parent = selectedElement
         end
     end)
-    yPos = yPos + 40
     
     -- Add Shadow button
-    local shadowBtn = createEffectButton("Add Shadow", yPos, propertiesContent)
+    local shadowBtn = createEffectButton("Add Shadow", 160, effectsSection)
     shadowBtn.MouseButton1Click:Connect(function()
         if not selectedElement:FindFirstChild("DropShadow") then
             local shadow = Instance.new("ImageLabel")
@@ -957,9 +984,6 @@ function updatePropertiesTab()
             shadow.Parent = selectedElement
         end
     end)
-    yPos = yPos + 40
-    
-    propertiesContent.CanvasSize = UDim2.new(0, 0, 0, yPos + 20)
 end
 
 -- Create a dropdown menu
@@ -968,6 +992,7 @@ function createDropdown(parent, name, currentValue, options, yPos, callback)
     frame.Size = UDim2.new(1, -20, 0, 50)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1040,9 +1065,10 @@ end
 -- Create a property input field
 function createPropertyInput(parent, name, value, yPos, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 30)
+    frame.Size = UDim2.new(1, -20, 0, 40)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1079,9 +1105,10 @@ end
 -- Create a Vector2 input (for position/size)
 function createVector2Input(parent, name, x, y, yPos, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 50)
+    frame.Size = UDim2.new(1, -20, 0, 60)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1161,9 +1188,10 @@ end
 -- Create a color picker
 function createColorPicker(parent, name, currentColor, yPos, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 90)
+    frame.Size = UDim2.new(1, -20, 0, 100)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1262,9 +1290,10 @@ end
 -- Create a slider
 function createSlider(parent, name, value, min, max, yPos, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 50)
+    frame.Size = UDim2.new(1, -20, 0, 60)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1299,23 +1328,34 @@ function createSlider(parent, name, value, min, max, yPos, callback)
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = fill
     
+    local handle = Instance.new("Frame")
+    handle.Size = UDim2.new(0, 20, 0, 20)
+    handle.Position = UDim2.new((value - min) / (max - min), -10, 0.5, -10)
+    handle.BackgroundColor3 = colors.highlight
+    handle.BorderSizePixel = 0
+    handle.Parent = slider
+    
+    local handleCorner = Instance.new("UICorner")
+    handleCorner.CornerRadius = UDim.new(1, 0)
+    handleCorner.Parent = handle
+    
     local dragging = false
     
     slider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             updateSlider(input.Position.X)
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateSlider(input.Position.X)
         end
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
@@ -1326,6 +1366,7 @@ function createSlider(parent, name, value, min, max, yPos, callback)
         local newValue = min + relativeX * (max - min)
         
         fill.Size = UDim2.new(relativeX, 0, 1, 0)
+        handle.Position = UDim2.new(relativeX, -10, 0.5, -10)
         label.Text = name .. ": " .. string.format("%.2f", newValue)
         callback(newValue)
     end
@@ -1337,6 +1378,7 @@ function createToggle(parent, name, value, yPos, callback)
     frame.Size = UDim2.new(1, -20, 0, 40)
     frame.Position = UDim2.new(0, 10, 0, yPos)
     frame.BackgroundTransparency = 1
+    frame.LayoutOrder = yPos
     frame.Parent = parent
     
     local label = Instance.new("TextLabel")
@@ -1384,8 +1426,8 @@ end
 -- Create an effect button
 function createEffectButton(text, yPos, parent)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 30)
-    button.Position = UDim2.new(0, 10, 0, yPos)
+    button.Size = UDim2.new(0.2, -10, 0, 40)
+    button.Position = UDim2.new(0, yPos, 0, 5)
     button.Text = text
     button.TextColor3 = colors.text
     button.BackgroundColor3 = colors.secondary
@@ -1395,7 +1437,7 @@ function createEffectButton(text, yPos, parent)
     button.Parent = parent
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 4)
+    buttonCorner.CornerRadius = UDim.new(0, 6)
     buttonCorner.Parent = button
     
     addHoverEffect(button, Color3.fromRGB(90, 100, 120), colors.secondary)
@@ -1413,6 +1455,7 @@ scriptEditor.BackgroundColor3 = Color3.fromRGB(40, 45, 55)
 scriptEditor.BorderSizePixel = 0
 scriptEditor.ScrollBarThickness = 8
 scriptEditor.CanvasSize = UDim2.new(0, 0, 0, 0)
+scriptEditor.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scriptEditor.Parent = scriptsContent
 
 local scriptInput = Instance.new("TextBox")
@@ -1440,6 +1483,7 @@ applyScriptBtn.BackgroundColor3 = colors.success
 applyScriptBtn.BorderSizePixel = 0
 applyScriptBtn.Font = Enum.Font.GothamBold
 applyScriptBtn.TextSize = 14
+applyScriptBtn.LayoutOrder = 100
 applyScriptBtn.Parent = scriptsContent
 
 local applyCorner = Instance.new("UICorner")
@@ -1478,6 +1522,7 @@ themeLabel.BackgroundTransparency = 1
 themeLabel.Font = Enum.Font.GothamBold
 themeLabel.TextSize = 16
 themeLabel.TextXAlignment = Enum.TextXAlignment.Left
+themeLabel.LayoutOrder = settingsYPos
 themeLabel.Parent = settingsContent
 settingsYPos = settingsYPos + 40
 
@@ -1491,10 +1536,10 @@ settingsYPos = settingsYPos + 60
 
 -- UI Scale
 createSlider(settingsContent, "UI Scale", 1, 0.5, 2, settingsYPos, function(value)
-    mainContainer.Size = UDim2.new(0, 500 * value, 0, 650 * value)
-    mainContainer.Position = UDim2.new(0.5, -250 * value, 0.5, -325 * value)
+    mainContainer.Size = UDim2.new(0, 520 * value, 0, 700 * value)
+    mainContainer.Position = UDim2.new(0.5, -260 * value, 0.5, -350 * value)
 end)
-settingsYPos = settingsYPos + 60
+settingsYPos = settingsYPos + 70
 
 -- Snap to grid
 createToggle(settingsContent, "Enable Grid Snapping", true, settingsYPos, function(value)
@@ -1505,7 +1550,7 @@ settingsYPos = settingsYPos + 50
 createSlider(settingsContent, "Grid Size", 10, 5, 50, settingsYPos, function(value)
     print("Grid size set to:", value)
 end)
-settingsYPos = settingsYPos + 60
+settingsYPos = settingsYPos + 70
 
 -- Advanced settings
 local advancedLabel = Instance.new("TextLabel")
@@ -1517,6 +1562,7 @@ advancedLabel.BackgroundTransparency = 1
 advancedLabel.Font = Enum.Font.GothamBold
 advancedLabel.TextSize = 16
 advancedLabel.TextXAlignment = Enum.TextXAlignment.Left
+advancedLabel.LayoutOrder = settingsYPos
 advancedLabel.Parent = settingsContent
 settingsYPos = settingsYPos + 40
 
@@ -1539,8 +1585,6 @@ createToggle(settingsContent, "Auto-save Layout", false, settingsYPos, function(
 end)
 settingsYPos = settingsYPos + 50
 
-settingsContent.CanvasSize = UDim2.new(0, 0, 0, settingsYPos + 20)
-
 -- Keyboard shortcuts
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -1555,6 +1599,27 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         selectElement(nil)
     end
 end)
+
+-- Mobile compatibility
+if UserInputService.TouchEnabled then
+    -- Increase sizes for mobile
+    mainContainer.Size = UDim2.new(0, 600, 0, 800)
+    mainContainer.Position = UDim2.new(0.5, -300, 0.5, -400)
+    dragHandleSize = 30
+    
+    -- Increase button sizes
+    for _, button in pairs(controlButtons:GetChildren()) do
+        if button:IsA("TextButton") then
+            button.Size = UDim2.new(0, 50, 0, 50)
+        end
+    end
+    
+    -- Increase font sizes
+    titleText.TextSize = 20
+    for name, button in pairs(tabButtons) do
+        button.TextSize = 16
+    end
+end
 
 -- Initial notification
 local function showNotification(text, color)
