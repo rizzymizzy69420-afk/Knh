@@ -1,4 +1,4 @@
--- Ultimate UI Designer Pro - Professional Edition
+-- Ultimate UI Designer Pro - Enhanced Edition
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -7,6 +7,7 @@ local HttpService = game:GetService("HttpService")
 local TextService = game:GetService("TextService")
 local CoreGui = game:GetService("CoreGui")
 local StarterGui = game:GetService("StarterGui")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -26,7 +27,8 @@ local colors = {
     panel = Color3.fromRGB(30, 33, 40),
     sidebar = Color3.fromRGB(25, 27, 35),
     propertyHeader = Color3.fromRGB(45, 50, 65),
-    propertyItem = Color3.fromRGB(40, 45, 60)
+    propertyItem = Color3.fromRGB(40, 45, 60),
+    colorPicker = Color3.fromRGB(50, 55, 70)
 }
 
 -- Modern glass effect function
@@ -54,7 +56,7 @@ end
 
 -- Main UI Designer GUI
 local designerGui = Instance.new("ScreenGui")
-designerGui.Name = "UIDesignerPro"
+designerGui.Name = "UIDesignerProEnhanced"
 designerGui.ResetOnSpawn = false
 designerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 designerGui.Parent = CoreGui
@@ -92,7 +94,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Name = "TitleText"
 titleText.Size = UDim2.new(1, -100, 1, 0)
 titleText.Position = UDim2.new(0, 20, 0, 0)
-titleText.Text = "UI DESIGNER PRO - Professional Edition"
+titleText.Text = "UI DESIGNER PRO - Enhanced Edition"
 titleText.TextColor3 = colors.text
 titleText.BackgroundTransparency = 1
 titleText.Font = Enum.Font.GothamBold
@@ -584,10 +586,18 @@ function setupElementControls(element)
     -- Dragging functionality
     element.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            -- Ignore if clicking on a drag handle
+            if input.Target and input.Target:IsA("GuiObject") and input.Target.Name:match("TopLeft|TopRight|BottomLeft|BottomRight") then
+                return
+            end
+            
             dragging = true
             dragStart = input.Position
             startPos = element.Position
             selectElement(element)
+            
+            -- Bring to front
+            element.ZIndex = 100
         end
     end)
     
@@ -660,6 +670,11 @@ function setupElementControls(element)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
             resizing = false
+            
+            -- Reset ZIndex to default
+            if element:IsA("GuiObject") then
+                element.ZIndex = 1
+            end
         end
     end)
     
@@ -869,6 +884,135 @@ local nameCorner = Instance.new("UICorner")
 nameCorner.CornerRadius = UDim.new(0, 6)
 nameCorner.Parent = elementNameBox
 
+-- Function to create a color picker
+local function createColorPicker(startColor, callback)
+    local colorPicker = createGlassFrame(designerGui, UDim2.new(0, 250, 0, 280), UDim2.new(0.5, -125, 0.5, -140), 0.05)
+    colorPicker.BackgroundColor3 = colors.colorPicker
+    colorPicker.ZIndex = 1000
+    
+    -- Close button
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0, 5)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = colors.text
+    closeBtn.BackgroundColor3 = colors.accent
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 14
+    closeBtn.Parent = colorPicker
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        colorPicker:Destroy()
+    end)
+    
+    -- Preview
+    local preview = Instance.new("Frame")
+    preview.Size = UDim2.new(1, -20, 0, 40)
+    preview.Position = UDim2.new(0, 10, 0, 40)
+    preview.BackgroundColor3 = startColor
+    preview.Parent = colorPicker
+    
+    local previewCorner = Instance.new("UICorner")
+    previewCorner.CornerRadius = UDim.new(0, 6)
+    previewCorner.Parent = preview
+    
+    -- Sliders for R, G, B
+    local sliders = {}
+    local colors = {"R", "G", "B"}
+    local currentColor = startColor
+    
+    for i, color in ipairs(colors) do
+        local sliderFrame = Instance.new("Frame")
+        sliderFrame.Size = UDim2.new(1, -20, 0, 30)
+        sliderFrame.Position = UDim2.new(0, 10, 0, 100 + (i-1)*40)
+        sliderFrame.BackgroundTransparency = 1
+        sliderFrame.Parent = colorPicker
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0, 20, 1, 0)
+        label.Text = color
+        label.TextColor3 = colors.text
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 14
+        label.Parent = sliderFrame
+        
+        local slider = Instance.new("Frame")
+        slider.Size = UDim2.new(0.7, 0, 0, 10)
+        slider.Position = UDim2.new(0, 30, 0.5, -5)
+        slider.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+        slider.Parent = sliderFrame
+        
+        local sliderCorner = Instance.new("UICorner")
+        sliderCorner.CornerRadius = UDim.new(1, 0)
+        sliderCorner.Parent = slider
+        
+        local fill = Instance.new("Frame")
+        fill.Size = UDim2.new(1, 0, 1, 0)
+        fill.BackgroundColor3 = Color3.fromRGB(255 * (color=="R" and 1 or 0), 255 * (color=="G" and 1 or 0), 255 * (color=="B" and 1 or 0))
+        fill.BorderSizePixel = 0
+        fill.Parent = slider
+        
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.CornerRadius = UDim.new(1, 0)
+        fillCorner.Parent = fill
+        
+        local valueBox = Instance.new("TextBox")
+        valueBox.Size = UDim2.new(0.2, -5, 1, 0)
+        valueBox.Position = UDim2.new(0.75, 5, 0, 0)
+        valueBox.Text = tostring(math.floor(startColor[color] * 255))
+        valueBox.TextColor3 = colors.text
+        valueBox.BackgroundColor3 = colors.propertyItem
+        valueBox.Font = Enum.Font.Gotham
+        valueBox.TextSize = 14
+        valueBox.Parent = sliderFrame
+        
+        local boxCorner = Instance.new("UICorner")
+        boxCorner.CornerRadius = UDim.new(0, 6)
+        boxCorner.Parent = valueBox
+        
+        -- Function to update the color
+        local function updateColor()
+            local r = tonumber(sliders.R and sliders.R.valueBox.Text or 0) or 0
+            local g = tonumber(sliders.G and sliders.G.valueBox.Text or 0) or 0
+            local b = tonumber(sliders.B and sliders.B.valueBox.Text or 0) or 0
+            currentColor = Color3.fromRGB(r, g, b)
+            preview.BackgroundColor3 = currentColor
+            if callback then
+                callback(currentColor)
+            end
+        end
+        
+        valueBox.FocusLost:Connect(updateColor)
+        
+        sliders[color] = {
+            slider = slider,
+            fill = fill,
+            valueBox = valueBox
+        }
+    end
+    
+    -- Update button
+    local updateBtn = Instance.new("TextButton")
+    updateBtn.Size = UDim2.new(1, -20, 0, 30)
+    updateBtn.Position = UDim2.new(0, 10, 1, -40)
+    updateBtn.Text = "Update Color"
+    updateBtn.TextColor3 = colors.text
+    updateBtn.BackgroundColor3 = colors.primary
+    updateBtn.Font = Enum.Font.GothamBold
+    updateBtn.TextSize = 14
+    updateBtn.Parent = colorPicker
+    
+    updateBtn.MouseButton1Click:Connect(function()
+        if callback then
+            callback(currentColor)
+        end
+        colorPicker:Destroy()
+    end)
+    
+    return colorPicker
+end
+
 -- Function to refresh properties
 function refreshProperties()
     propertyGrid:ClearAllChildren()
@@ -950,6 +1094,56 @@ function refreshProperties()
             end
         end
     end
+    
+    -- Custom property: Draggable for Frames
+    if selectedElement:IsA("Frame") then
+        local draggable = selectedElement:GetAttribute("Draggable") or false
+        
+        local propFrame = Instance.new("Frame")
+        propFrame.Size = UDim2.new(1, 0, 0, 30)
+        propFrame.Position = UDim2.new(0, 0, 0, yPos)
+        propFrame.BackgroundTransparency = 1
+        propFrame.Parent = propertyGrid
+        
+        local propLabel = Instance.new("TextLabel")
+        propLabel.Size = UDim2.new(0.4, -5, 1, 0)
+        propLabel.Position = UDim2.new(0, 0, 0, 0)
+        propLabel.Text = "Draggable"
+        propLabel.TextColor3 = colors.text
+        propLabel.BackgroundTransparency = 1
+        propLabel.Font = Enum.Font.Gotham
+        propLabel.TextSize = 14
+        propLabel.TextXAlignment = Enum.TextXAlignment.Left
+        propLabel.Parent = propFrame
+        
+        local propInput = Instance.new("TextButton")
+        propInput.Size = UDim2.new(0.6, -5, 1, 0)
+        propInput.Position = UDim2.new(0.4, 0, 0, 0)
+        propInput.Text = tostring(draggable)
+        propInput.TextColor3 = colors.text
+        propInput.BackgroundColor3 = draggable and colors.success or colors.propertyItem
+        propInput.Font = Enum.Font.Gotham
+        propInput.TextSize = 14
+        propInput.Parent = propFrame
+        
+        local inputCorner = Instance.new("UICorner")
+        inputCorner.CornerRadius = UDim.new(0, 6)
+        inputCorner.Parent = propInput
+        
+        propInput.MouseButton1Click:Connect(function()
+            local newValue = not draggable
+            selectedElement:SetAttribute("Draggable", newValue)
+            propInput.Text = tostring(newValue)
+            propInput.BackgroundColor3 = newValue and colors.success or colors.propertyItem
+            
+            -- Enable/disable dragging
+            if newValue then
+                setupDraggableFrame(selectedElement)
+            end
+        end)
+        
+        yPos = yPos + 35
+    end
 end
 
 -- Create property editor control
@@ -1001,13 +1195,15 @@ function createPropertyEditor(propName, propValue, yPos)
         propInput.Position = UDim2.new(0.4, 0, 0, 0)
         propInput.Text = tostring(propValue)
         propInput.TextColor3 = colors.text
-        propInput.BackgroundColor3 = colors.propertyItem
+        propInput.BackgroundColor3 = propValue and colors.success or colors.propertyItem
         propInput.Font = Enum.Font.Gotham
         propInput.TextSize = 14
         
         propInput.MouseButton1Click:Connect(function()
-            selectedElement[propName] = not selectedElement[propName]
-            propInput.Text = tostring(selectedElement[propName])
+            local newValue = not selectedElement[propName]
+            selectedElement[propName] = newValue
+            propInput.Text = tostring(newValue)
+            propInput.BackgroundColor3 = newValue and colors.success or colors.propertyItem
         end)
     elseif typeof(propValue) == "string" then
         propInput = Instance.new("TextBox")
@@ -1030,26 +1226,10 @@ function createPropertyEditor(propName, propValue, yPos)
         propInput.BackgroundColor3 = propValue
         
         propInput.MouseButton1Click:Connect(function()
-            -- Create color picker popup
-            local colorPicker = createGlassFrame(designerGui, UDim2.new(0, 200, 0, 250), UDim2.new(0.5, -100, 0.5, -125), 0)
-            colorPicker.ZIndex = 100
-            
-            -- Add color picker UI here (simplified for this example)
-            local closeBtn = Instance.new("TextButton")
-            closeBtn.Size = UDim2.new(0, 30, 0, 30)
-            closeBtn.Position = UDim2.new(1, -35, 0, 5)
-            closeBtn.Text = "✕"
-            closeBtn.TextColor3 = colors.text
-            closeBtn.BackgroundColor3 = colors.accent
-            closeBtn.Font = Enum.Font.GothamBold
-            closeBtn.TextSize = 14
-            closeBtn.Parent = colorPicker
-            
-            closeBtn.MouseButton1Click:Connect(function()
-                colorPicker:Destroy()
+            createColorPicker(propValue, function(newColor)
+                selectedElement[propName] = newColor
+                propInput.BackgroundColor3 = newColor
             end)
-            
-            -- Actual color picker implementation would go here
         end)
     elseif typeof(propValue) == "UDim2" then
         local xInput = Instance.new("TextBox")
@@ -1072,7 +1252,36 @@ function createPropertyEditor(propName, propValue, yPos)
         yInput.TextSize = 12
         yInput.Parent = propFrame
         
-        -- Add change handlers
+        local function updatePosition()
+            local function parseUDim(text)
+                local scale, offset = text:match("([%d%.]+),%s*([%d%.]+)")
+                if scale and offset then
+                    return UDim.new(tonumber(scale), tonumber(offset)
+                end
+                return nil
+            end
+            
+            local xUDim = parseUDim(xInput.Text)
+            local yUDim = parseUDim(yInput.Text)
+            
+            if xUDim and yUDim then
+                selectedElement[propName] = UDim2.new(xUDim, yUDim)
+            else
+                xInput.Text = string.format("X: %.1f, %d", selectedElement[propName].X.Scale, selectedElement[propName].X.Offset)
+                yInput.Text = string.format("Y: %.1f, %d", selectedElement[propName].Y.Scale, selectedElement[propName].Y.Offset)
+            end
+        end
+        
+        xInput.FocusLost:Connect(updatePosition)
+        yInput.FocusLost:Connect(updatePosition)
+        
+        local xCorner = Instance.new("UICorner")
+        xCorner.CornerRadius = UDim.new(0, 6)
+        xCorner.Parent = xInput
+        
+        local yCorner = Instance.new("UICorner")
+        yCorner.CornerRadius = UDim.new(0, 6)
+        yCorner.Parent = yInput
     else
         propInput = Instance.new("TextLabel")
         propInput.Size = UDim2.new(0.6, -5, 1, 0)
@@ -1095,6 +1304,45 @@ function createPropertyEditor(propName, propValue, yPos)
     return yPos + 35
 end
 
+-- Function to make frames draggable
+function setupDraggableFrame(frame)
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+    
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
 -- Set up scripts tab
 local scriptsContent = tabContents["Scripts"]
 local scriptEditor = Instance.new("ScrollingFrame")
@@ -1112,7 +1360,7 @@ local scriptInput = Instance.new("TextBox")
 scriptInput.Name = "ScriptInput"
 scriptInput.Size = UDim2.new(1, -10, 1, -10)
 scriptInput.Position = UDim2.new(0, 5, 0, 5)
-scriptInput.Text = "-- Add your script here\n-- Use 'element' to reference the selected element\nprint(\"Button clicked!\")\nelement.Text = \"Clicked!\""
+scriptInput.Text = "-- Add your script here\n-- Use 'element' to reference the selected element\n\n-- For buttons:\nelement.MouseButton1Click:Connect(function()\n    print(\"Button clicked!\")\n    element.Text = \"Clicked!\"\nend)"
 scriptInput.TextColor3 = colors.text
 scriptInput.BackgroundTransparency = 1
 scriptInput.TextXAlignment = Enum.TextXAlignment.Left
@@ -1286,6 +1534,8 @@ function exportUI()
     
     local exportScript = "-- UI Designer Pro Export\n"
     exportScript = exportScript .. "local Players = game:GetService(\"Players\")\n"
+    exportScript = exportScript .. "local UserInputService = game:GetService(\"UserInputService\")\n"
+    exportScript = exportScript .. "local TweenService = game:GetService(\"TweenService\")\n\n"
     exportScript = exportScript .. "local player = Players.LocalPlayer\n"
     exportScript = exportScript .. "local playerGui = player:WaitForChild(\"PlayerGui\")\n\n"
     exportScript = exportScript .. "local screenGui = Instance.new(\"ScreenGui\")\n"
@@ -1294,70 +1544,84 @@ function exportUI()
     exportScript = exportScript .. "screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling\n"
     exportScript = exportScript .. "screenGui.Parent = playerGui\n\n"
     
-    local function serializeProperties(element, indent)
-        local props = ""
-        local indentStr = string.rep("    ", indent)
-        
-        -- Common properties
-        props = props .. indentStr .. "obj.Name = \"" .. element.Name .. "\"\n"
-        
-        if element:IsA("GuiObject") then
-            props = props .. indentStr .. string.format("obj.Size = UDim2.new(%.2f, %d, %.2f, %d)\n", 
-                element.Size.X.Scale, element.Size.X.Offset,
-                element.Size.Y.Scale, element.Size.Y.Offset)
-                
-            props = props .. indentStr .. string.format("obj.Position = UDim2.new(%.2f, %d, %.2f, %d)\n", 
-                element.Position.X.Scale, element.Position.X.Offset,
-                element.Position.Y.Scale, element.Position.Y.Offset)
-                
-            props = props .. indentStr .. string.format("obj.BackgroundColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
-                element.BackgroundColor3.R, element.BackgroundColor3.G, element.BackgroundColor3.B)
-                
-            props = props .. indentStr .. string.format("obj.BackgroundTransparency = %.2f\n", element.BackgroundTransparency)
-            props = props .. indentStr .. "obj.BorderSizePixel = " .. tostring(element.BorderSizePixel) .. "\n"
-            props = props .. indentStr .. "obj.Visible = " .. tostring(element.Visible) .. "\n"
-            props = props .. indentStr .. "obj.ZIndex = " .. tostring(element.ZIndex) .. "\n"
-        end
-        
-        -- Text-specific properties
-        if element:IsA("TextLabel") or element:IsA("TextButton") or element:IsA("TextBox") then
-            props = props .. indentStr .. "obj.Text = \"" .. element.Text:gsub("\"", "\\\"") .. "\"\n"
-            props = props .. indentStr .. string.format("obj.TextColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
-                element.TextColor3.R, element.TextColor3.G, element.TextColor3.B)
-            props = props .. indentStr .. "obj.TextSize = " .. tostring(element.TextSize) .. "\n"
-            props = props .. indentStr .. "obj.Font = Enum.Font." .. tostring(element.Font) .. "\n"
-            props = props .. indentStr .. "obj.TextScaled = " .. tostring(element.TextScaled) .. "\n"
-            props = props .. indentStr .. "obj.TextWrapped = " .. tostring(element.TextWrapped) .. "\n"
-        end
-        
-        -- Image-specific properties
-        if element:IsA("ImageLabel") or element:IsA("ImageButton") then
-            props = props .. indentStr .. "obj.Image = \"" .. element.Image .. "\"\n"
-            props = props .. indentStr .. string.format("obj.ImageColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
-                element.ImageColor3.R, element.ImageColor3.G, element.ImageColor3.B)
-            props = props .. indentStr .. "obj.ImageTransparency = " .. tostring(element.ImageTransparency) .. "\n"
-            props = props .. indentStr .. "obj.ScaleType = Enum.ScaleType." .. tostring(element.ScaleType) .. "\n"
-        end
-        
-        -- ScrollingFrame properties
-        if element:IsA("ScrollingFrame") then
-            props = props .. indentStr .. string.format("obj.CanvasSize = UDim2.new(%.2f, %d, %.2f, %d)\n", 
-                element.CanvasSize.X.Scale, element.CanvasSize.X.Offset,
-                element.CanvasSize.Y.Scale, element.CanvasSize.Y.Offset)
-            props = props .. indentStr .. "obj.ScrollBarThickness = " .. tostring(element.ScrollBarThickness) .. "\n"
-        end
-        
-        return props
-    end
+    -- Function to make frames draggable
+    exportScript = exportScript .. "local function makeDraggable(frame)\n"
+    exportScript = exportScript .. "    local dragging = false\n"
+    exportScript = exportScript .. "    local dragInput, dragStart, startPos\n\n"
+    exportScript = exportScript .. "    frame.InputBegan:Connect(function(input)\n"
+    exportScript = exportScript .. "        if input.UserInputType == Enum.UserInputType.MouseButton1 then\n"
+    exportScript = exportScript .. "            dragging = true\n"
+    exportScript = exportScript .. "            dragStart = input.Position\n"
+    exportScript = exportScript .. "            startPos = frame.Position\n\n"
+    exportScript = exportScript .. "            input.Changed:Connect(function()\n"
+    exportScript = exportScript .. "                if input.UserInputState == Enum.UserInputState.End then\n"
+    exportScript = exportScript .. "                    dragging = false\n"
+    exportScript = exportScript .. "                end\n"
+    exportScript = exportScript .. "            end)\n"
+    exportScript = exportScript .. "        end\n"
+    exportScript = exportScript .. "    end)\n\n"
+    exportScript = exportScript .. "    frame.InputChanged:Connect(function(input)\n"
+    exportScript = exportScript .. "        if input.UserInputType == Enum.UserInputType.MouseMovement then\n"
+    exportScript = exportScript .. "            dragInput = input\n"
+    exportScript = exportScript .. "        end\n"
+    exportScript = exportScript .. "    end)\n\n"
+    exportScript = exportScript .. "    UserInputService.InputChanged:Connect(function(input)\n"
+    exportScript = exportScript .. "        if input == dragInput and dragging then\n"
+    exportScript = exportScript .. "            local delta = input.Position - dragStart\n"
+    exportScript = exportScript .. "            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)\n"
+    exportScript = exportScript .. "        end\n"
+    exportScript = exportScript .. "    end)\n"
+    exportScript = exportScript .. "end\n\n"
     
     local function processElement(element, indent, parentName)
         indent = indent or 0
         local indentStr = string.rep("    ", indent)
-        local elementName = element.Name:gsub("%s", "_")
+        local elementName = element.Name:gsub("[^%w]", "_")
         
         -- Create instance
         exportScript = exportScript .. indentStr .. "local " .. elementName .. " = Instance.new(\"" .. element.ClassName .. "\")\n"
-        exportScript = exportScript .. serializeProperties(element, indent)
+        
+        -- Set properties
+        exportScript = exportScript .. indentStr .. elementName .. ".Name = \"" .. element.Name .. "\"\n"
+        
+        if element:IsA("GuiObject") then
+            exportScript = exportScript .. indentStr .. string.format(elementName .. ".Size = UDim2.new(%.3f, %d, %.3f, %d)\n", 
+                element.Size.X.Scale, element.Size.X.Offset,
+                element.Size.Y.Scale, element.Size.Y.Offset)
+                
+            exportScript = exportScript .. indentStr .. string.format(elementName .. ".Position = UDim2.new(%.3f, %d, %.3f, %d)\n", 
+                element.Position.X.Scale, element.Position.X.Offset,
+                element.Position.Y.Scale, element.Position.Y.Offset)
+                
+            exportScript = exportScript .. indentStr .. string.format(elementName .. ".BackgroundColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
+                element.BackgroundColor3.R, element.BackgroundColor3.G, element.BackgroundColor3.B)
+                
+            exportScript = exportScript .. indentStr .. elementName .. ".BackgroundTransparency = " .. tostring(element.BackgroundTransparency) .. "\n"
+            exportScript = exportScript .. indentStr .. elementName .. ".BorderSizePixel = " .. tostring(element.BorderSizePixel) .. "\n"
+            exportScript = exportScript .. indentStr .. elementName .. ".Visible = " .. tostring(element.Visible) .. "\n"
+            exportScript = exportScript .. indentStr .. elementName .. ".ZIndex = " .. tostring(element.ZIndex) .. "\n"
+            
+            -- Set draggable if attribute exists
+            if element:GetAttribute("Draggable") then
+                exportScript = exportScript .. indentStr .. "makeDraggable(" .. elementName .. ")\n"
+            end
+        end
+        
+        -- Text-specific properties
+        if element:IsA("TextLabel") or element:IsA("TextButton") or element:IsA("TextBox") then
+            exportScript = exportScript .. indentStr .. elementName .. ".Text = [==[" .. element.Text .. "]==]\n"
+            exportScript = exportScript .. indentStr .. string.format(elementName .. ".TextColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
+                element.TextColor3.R, element.TextColor3.G, element.TextColor3.B)
+            exportScript = exportScript .. indentStr .. elementName .. ".TextSize = " .. tostring(element.TextSize) .. "\n"
+            exportScript = exportScript .. indentStr .. elementName .. ".Font = Enum.Font." .. tostring(element.Font) .. "\n"
+        end
+        
+        -- Image-specific properties
+        if element:IsA("ImageLabel") or element:IsA("ImageButton") then
+            exportScript = exportScript .. indentStr .. elementName .. ".Image = \"" .. element.Image .. "\"\n"
+            exportScript = exportScript .. indentStr .. string.format(elementName .. ".ImageColor3 = Color3.new(%.3f, %.3f, %.3f)\n", 
+                element.ImageColor3.R, element.ImageColor3.G, element.ImageColor3.B)
+        end
         
         -- Set parent
         if parentName then
@@ -1368,10 +1632,16 @@ function exportUI()
         
         -- Process children
         for _, child in ipairs(element:GetChildren()) do
-            processElement(child, indent + 1, elementName)
+            if child:IsA("GuiObject") or child:IsA("UIComponent") then
+                processElement(child, indent + 1, elementName)
+            elseif child:IsA("LocalScript") and child.Name == "CustomScript" then
+                exportScript = exportScript .. indentStr .. "local script_" .. elementName .. " = Instance.new(\"LocalScript\")\n"
+                exportScript = exportScript .. indentStr .. "script_" .. elementName .. ".Name = \"CustomScript\"\n"
+                exportScript = exportScript .. indentStr .. "script_" .. elementName .. ".Source = [==[\n"
+                exportScript = exportScript .. child.Source:gsub("%]", "]==]..']'..[==[") .. "\n]==]\n"
+                exportScript = exportScript .. indentStr .. "script_" .. elementName .. ".Parent = " .. elementName .. "\n\n"
+            end
         end
-        
-        exportScript = exportScript .. "\n"
     end
     
     -- Process all top-level elements
